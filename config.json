@@ -1,6 +1,7 @@
 {
   "allowed_dirs": [
-    "G:/projects"
+    "D:/projects",
+    "D:/Webs"
   ],
   "allowed_extensions": [
     ".py",
@@ -13,6 +14,10 @@
     ".yaml",
     ".toml",
     ".cfg",
-    ".ini"
+    ".ini",
+    ".css",
+    ".scss",
+    ".htm",
+    ".html"
   ]
 }

@@ -4,35 +4,182 @@ A secure filesystem access server for MCP clients.
 """
 
 import os
-import json
 import sys
+import json
+import argparse
 from typing import List, Dict, Any
 from mcp.server.fastmcp import FastMCP
 
 # Initialize the MCP server
 mcp = FastMCP(name="FileSystemServer")
 
+def parse_arguments():
+    """Parse command line arguments for configuration."""
+    parser = argparse.ArgumentParser(
+        description="FileSystem MCP Server - Secure filesystem access for AI assistants",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Using command line arguments (for MCP clients):
+  python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
+  
+  # Using config.json fallback (for debugging in Visual Studio):
+  python app.py
+  
+  # Show MCP configuration help:
+  python app.py --help-mcp
+        """
+    )
+    
+    parser.add_argument(
+        '--allowed-dirs', '--allowed_dirs',
+        nargs='*',
+        help='List of allowed directory paths (e.g., --allowed-dirs "D:/projects" "D:/Webs")',
+        required=False,
+        default=None
+    )
+    
+    parser.add_argument(
+        '--allowed-extensions', '--allowed_extensions',
+        nargs='*', 
+        help='List of allowed file extensions (e.g., --allowed-extensions ".py" ".js" ".md")',
+        required=False,
+        default=None
+    )
+    
+    parser.add_argument(
+        '--config',
+        help='Path to config.json file (default: ./config.json)',
+        default='config.json'
+    )
+    
+    parser.add_argument(
+        '--help-mcp',
+        action='store_true',
+        help='Show MCP client configuration examples'
+    )
+    
+    return parser.parse_args()
+
+def load_configuration():
+    """Load configuration from command line arguments or config.json fallback."""
+    args = parse_arguments()
+    
+    if args.help_mcp:
+        show_mcp_help()
+        sys.exit(0)
+    
+    # Priority: command line arguments > config.json > defaults
+    allowed_dirs = []
+    allowed_extensions = []
+    config_source = "none"
+    
+    # Try command line arguments first
+    if args.allowed_dirs is not None:
+        allowed_dirs = [os.path.abspath(d) for d in args.allowed_dirs]
+        config_source = "command_line_args"
+        print(f"[OK] Using allowed_dirs from command line: {args.allowed_dirs}")
+    
+    if args.allowed_extensions is not None:
+        allowed_extensions = [ext.lower() for ext in args.allowed_extensions]
+        if config_source != "command_line_args":
+            config_source = "command_line_args"
+        print(f"[OK] Using allowed_extensions from command line: {args.allowed_extensions}")
+    
+    # Fallback to config.json if command-line args not provided
+    if not allowed_dirs or not allowed_extensions:
+        try:
+            with open(args.config, 'r') as f:
+                config = json.load(f)
+            
+            if not allowed_dirs:
+                allowed_dirs = [os.path.abspath(d) for d in config.get('allowed_dirs', [])]
+                if allowed_dirs:
+                    config_source = "config_file"
+                    print(f"[FILE] Using allowed_dirs from {args.config}: {config.get('allowed_dirs', [])}")
+            
+            if not allowed_extensions:
+                allowed_extensions = [ext.lower() for ext in config.get('allowed_extensions', [])]
+                if allowed_extensions and config_source != "command_line_args":
+                    config_source = "config_file"
+                    print(f"[FILE] Using allowed_extensions from {args.config}: {config.get('allowed_extensions', [])}")
+                    
+        except FileNotFoundError:
+            if not allowed_dirs and not allowed_extensions:
+                print(f"[WARN] {args.config} not found and no command line arguments provided.")
+                print("   For debugging in Visual Studio 2022: Create config.json file")
+                print("   For MCP clients: Use command line arguments")
+        except Exception as e:
+            print(f"[ERROR] Error loading {args.config}: {e}. Using command line args or defaults.")
+    
+    # Show warnings for missing configuration
+    if not allowed_dirs:
+        print("[WARN] No allowed directories configured")
+        print("   For debugging: Create config.json or use --allowed-dirs")
+        print("   For MCP: Add --allowed-dirs to your MCP client configuration")
+    
+    if not allowed_extensions:
+        print("[WARN] No allowed extensions configured")
+        print("   For debugging: Create config.json or use --allowed-extensions")
+        print("   For MCP: Add --allowed-extensions to your MCP client configuration")
+    
+    return allowed_dirs, allowed_extensions, config_source
+
+def show_mcp_help():
+    """Show MCP client configuration examples."""
+    current_dir = os.getcwd()
+    
+    print("FILESYSTEM MCP SERVER - CLIENT CONFIGURATION EXAMPLES")
+    print("="*70)
+    
+    print("\nCorrected Configuration for Your Setup:")
+    print("-" * 50)
+    print('''{
+  "filesystem-server": {
+    "command": "python",
+    "args": [
+      "''' + os.path.join(current_dir, "app.py").replace(os.sep, "/") + '''",
+      "--allowed-dirs", "D:/projects", "D:/Webs",
+      "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+    ],
+    "cwd": "''' + current_dir.replace(os.sep, "/") + '''"
+  }
+}''')
+    
+    print("\nAlternative: Debugging Configuration (uses config.json):")
+    print("-" * 50)
+    print('''{
+  "filesystem-server": {
+    "command": "python",
+    "args": ["''' + os.path.join(current_dir, "app.py").replace(os.sep, "/") + '''"],
+    "cwd": "''' + current_dir.replace(os.sep, "/") + '''"
+  }
+}''')
+    
+    print("\nConfiguration Options:")
+    print("  [OK] Command-line args: Best for MCP clients")
+    print("  [OK] config.json fallback: Perfect for Visual Studio 2022 debugging")
+    print("  [OK] Hybrid approach: Works for both scenarios")
+    print("  [OK] No config file conflicts: Priority system handles both")
+    
+    print("="*70)
+
 # Load configuration
-try:
-    with open('config.json', 'r') as f:
-        config = json.load(f)
-    allowed_dirs = [os.path.abspath(d) for d in config.get('allowed_dirs', [])]
-    allowed_extensions = [ext.lower() for ext in config.get('allowed_extensions', [])]
-except FileNotFoundError:
-    print("config.json not found. Using empty configuration - no paths allowed.")
-    allowed_dirs = []
-    allowed_extensions = []
-except Exception as e:
-    print(f"Error loading config: {e}. Using empty configuration.")
-    allowed_dirs = []
-    allowed_extensions = []
+allowed_dirs, allowed_extensions, config_source = load_configuration()
 
 def is_allowed_path(path: str) -> bool:
     """Check if the given path is within one of the allowed directories."""
+    if not allowed_dirs:
+        return False
+    
     abs_path = os.path.abspath(path)
     for allowed in allowed_dirs:
-        if os.path.commonpath([abs_path, allowed]) == allowed:
-            return True
+        try:
+            if os.path.commonpath([abs_path, allowed]) == allowed:
+                return True
+        except ValueError:
+            # Paths on different drives on Windows
+            continue
     return False
 
 @mcp.tool()
@@ -48,12 +195,28 @@ def init() -> Dict[str, Any]:
     """
     if not allowed_dirs:
         return {
-            "message": "No allowed directories configured in config.json",
+            "message": "No allowed directories configured. Use --allowed-dirs argument or create config.json for debugging.",
             "isError": True,
             "details": {
                 "allowed_dirs": allowed_dirs,
                 "accessible_dirs": [],
-                "inaccessible_dirs": []
+                "inaccessible_dirs": [],
+                "configuration_source": config_source,
+                "help": "For MCP: Add --allowed-dirs argument. For debugging: Create config.json file."
+            }
+        }
+    
+    if not allowed_extensions:
+        return {
+            "message": "No allowed extensions configured. Use --allowed-extensions argument or create config.json for debugging.",
+            "isError": True,
+            "details": {
+                "allowed_dirs": allowed_dirs,
+                "allowed_extensions": allowed_extensions,
+                "accessible_dirs": [],
+                "inaccessible_dirs": [],
+                "configuration_source": config_source,
+                "help": "For MCP: Add --allowed-extensions argument. For debugging: Create config.json file."
             }
         }
     
@@ -100,9 +263,11 @@ def init() -> Dict[str, Any]:
             "isError": True,
             "details": {
                 "allowed_dirs": allowed_dirs,
+                "allowed_extensions": allowed_extensions,
                 "accessible_dirs": accessible_dirs,
                 "inaccessible_dirs": inaccessible_dirs,
-                "error_details": error_details
+                "error_details": error_details,
+                "configuration_source": config_source
             }
         }
     else:
@@ -111,10 +276,12 @@ def init() -> Dict[str, Any]:
             "isError": False,
             "details": {
                 "allowed_dirs": allowed_dirs,
+                "allowed_extensions": allowed_extensions,
                 "accessible_dirs": accessible_dirs,
                 "inaccessible_dirs": inaccessible_dirs,
                 "total_allowed": len(allowed_dirs),
-                "total_accessible": len(accessible_dirs)
+                "total_accessible": len(accessible_dirs),
+                "configuration_source": config_source
             }
         }
 
@@ -158,7 +325,7 @@ def read_file(file_path: str) -> str:
         raise ValueError("The provided path is not a file or does not exist.")
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in allowed_extensions:
-        raise ValueError("This file type is not allowed for reading.")
+        raise ValueError(f"This file type '{ext}' is not allowed for reading. Allowed extensions: {allowed_extensions}")
     with open(file_path, 'r', encoding='utf-8') as f:
         return f.read()
 
@@ -168,48 +335,56 @@ def print_connection_info():
     python_path = sys.executable
     
     print("\n" + "="*60)
-    print("???  FILESYSTEM MCP SERVER CONNECTION INFO")
+    print("FILESYSTEM MCP SERVER CONNECTION INFO")
     print("="*60)
     print(f"Server Name: FileSystemServer")
     print(f"Server Directory: {current_dir}")
     print(f"Python Path: {python_path}")
+    print(f"Configuration Source: {config_source}")
     print(f"Transport: stdio (Standard Input/Output)")
-    print("\n?? MCP Client Configuration:")
-    print("Add this to your MCP client configuration:")
+    
+    if config_source == "config_file":
+        print("\n[DEBUG] DEBUGGING MODE (using config.json)")
+        print("Perfect for Visual Studio 2022 development!")
+    else:
+        print("\nMCP Client Configuration:")
+        print("Add this to your MCP client configuration:")
+        print("-" * 40)
+        print(f'{{')
+        print(f'  "filesystem-server": {{')
+        print(f'    "command": "python",')
+        print(f'    "args": [')
+        print(f'      "{os.path.join(current_dir, "app.py").replace(os.sep, "/")}",')
+        print(f'      "--allowed-dirs", "D:/projects", "D:/Webs",')
+        print(f'      "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".css", ".html"')
+        print(f'    ],')
+        print(f'    "cwd": "{current_dir.replace(os.sep, "/")}"')
+        print(f'  }}')
+        print(f'}}')
+    
     print("-" * 40)
-    print(f'{{')
-    print(f'  "mcpServers": {{')
-    print(f'    "filesystem-server": {{')
-    print(f'      "command": "uv",')
-    print(f'      "args": ["run", "app.py"],')
-    print(f'      "cwd": "{current_dir.replace(os.sep, "/")}"')
-    print(f'    }}')
-    print(f'  }}')
-    print(f'}}')
-    print("-" * 40)
-    print("\n?? Alternative configuration (direct Python):")
-    print("-" * 40)
-    print(f'{{')
-    print(f'  "mcpServers": {{')
-    print(f'    "filesystem-server": {{')
-    print(f'      "command": "{python_path.replace(os.sep, "/")}",')
-    print(f'      "args": ["{os.path.join(current_dir, "app.py").replace(os.sep, "/")}"],')
-    print(f'      "cwd": "{current_dir.replace(os.sep, "/")}"')
-    print(f'    }}')
-    print(f'  }}')
-    print(f'}}')
-    print("-" * 40)
-    print("\n?? Usage Instructions:")
-    print("1. Add the configuration above to your MCP client")
-    print("2. The server communicates via stdio (stdin/stdout)")
+    print("\nUsage Instructions:")
+    print("1. For MCP clients: Use command-line arguments (recommended)")
+    print("2. For Visual Studio 2022 debugging: Uses config.json fallback")
     print("3. Available tools: init(), list_directory(), read_file()")
-    print("4. Server will respect the allowed_dirs and allowed_extensions in config.json")
+    print("4. Use --help-mcp for more configuration examples")
     print("="*60)
 
 def main():
     """Main entry point for the server."""
     print(f"Starting MCP server with allowed dirs: {allowed_dirs}")
     print(f"Allowed extensions: {allowed_extensions}")
+    print(f"Configuration source: {config_source}")
+    
+    # Allow server to start even without configuration for debugging purposes
+    if not allowed_dirs or not allowed_extensions:
+        print("\n[WARN] CONFIGURATION WARNING:")
+        print("Server starting with limited configuration.")
+        if config_source == "none":
+            print("For debugging: Create config.json file or use command line arguments")
+            print("For MCP clients: Ensure arguments are passed correctly")
+        print("Use init() tool to validate configuration.")
+    
     print_connection_info()
     mcp.run()
 

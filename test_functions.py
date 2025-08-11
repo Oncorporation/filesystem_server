@@ -15,7 +15,7 @@ from app import list_directory, read_file, is_allowed_path, allowed_dirs, allowe
 
 def test_list_directory():
     """Test the list_directory function."""
-    test_directory = "G:/projects/Gradio-Hackathon-certificate-generator"
+    test_directory = "D:/Projects/modal_mcp_server"
     
     print("="*60)
     print("?? TESTING LIST_DIRECTORY FUNCTION")
@@ -40,7 +40,7 @@ def test_list_directory():
 
 def test_read_file():
     """Test the read_file function."""
-    test_file = "G:/projects/Gradio-Hackathon-certificate-generator/certificate_upload_module.py"
+    test_file = "D:/Projects/modal_mcp_server/mcp_client.py"
     
     print("\n" + "="*60)
     print("?? TESTING READ_FILE FUNCTION")

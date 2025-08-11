@@ -1,0 +1,194 @@
+{
+  "description": "MCP Filesystem Server Configuration Examples - Multiple Format Options",
+  "mcp_client_formats": {
+    "format_1_direct_servers": {
+      "description": "Direct 'servers' format (used by GitHub Copilot and most MCP clients)",
+      "structure": "{ \"servers\": { \"server-name\": { ... } } }",
+      "examples": {
+        "recommended_configuration": {
+          "description": "Command-line arguments approach (no config.json needed)",
+          "config": {
+            "servers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": [
+                  "/path/to/your/filesystem_server/app.py",
+                  "--allowed-dirs", "/your/project/dir", "/another/project/dir",
+                  "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+                ],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          }
+        },
+        "minimal_web_dev": {
+          "description": "Focused on web development files",
+          "config": {
+            "servers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": [
+                  "/path/to/your/filesystem_server/app.py",
+                  "--allowed-dirs", "/path/to/web/projects",
+                  "--allowed-extensions", ".html", ".css", ".js", ".ts", ".json", ".md", ".yml", ".txt"
+                ],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          }
+        },
+        "multiple_directories": {
+          "description": "Multiple allowed directories with different file types",
+          "config": {
+            "servers": {
+              "filesystem-server": {
+                "command": "python", 
+                "args": [
+                  "/path/to/your/filesystem_server/app.py",
+                  "--allowed-dirs", "/source/repos", "/development/projects", "/web/sites",
+                  "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".cs", ".cpp", ".h", ".hpp", ".css", ".html"
+                ],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          }
+        },
+        "fallback_config_json": {
+          "description": "Fallback to config.json file (backward compatibility)",
+          "config": {
+            "servers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": ["/path/to/your/filesystem_server/app.py"],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          },
+          "note": "Requires config.json file in the same directory as app.py"
+        }
+      }
+    },
+    "format_2_mcpservers_wrapper": {
+      "description": "Legacy 'mcpServers' wrapper format (some older MCP clients)",
+      "structure": "{ \"mcpServers\": { \"server-name\": { ... } } }",
+      "examples": {
+        "recommended_configuration": {
+          "description": "Command-line arguments approach (no config.json needed)",
+          "config": {
+            "mcpServers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": [
+                  "/path/to/your/filesystem_server/app.py",
+                  "--allowed-dirs", "/your/project/dir", "/another/project/dir",
+                  "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+                ],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          }
+        },
+        "fallback_config_json": {
+          "description": "Fallback to config.json file (backward compatibility)",
+          "config": {
+            "mcpServers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": ["/path/to/your/filesystem_server/app.py"],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          },
+          "note": "Requires config.json file in the same directory as app.py"
+        }
+      }
+    }
+  },
+  "real_world_examples": {
+    "windows_example": {
+      "description": "Typical Windows installation paths",
+      "config": {
+        "servers": {
+          "filesystem-server": {
+            "command": "python",
+            "args": [
+              "D:/Projects/filesystem_server/app.py",
+              "--allowed-dirs", "D:/projects", "D:/webs", "C:/source/repos",
+              "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+            ],
+            "cwd": "D:/Projects/filesystem_server"
+          }
+        }
+      }
+    },
+    "linux_mac_example": {
+      "description": "Typical Linux/macOS installation paths",
+      "config": {
+        "servers": {
+          "filesystem-server": {
+            "command": "python3",
+            "args": [
+              "/home/user/projects/filesystem_server/app.py",
+              "--allowed-dirs", "/home/user/projects", "/home/user/development",
+              "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+            ],
+            "cwd": "/home/user/projects/filesystem_server"
+          }
+        }
+      }
+    }
+  },
+  "supported_extensions": {
+    "code_files": [".py", ".js", ".ts", ".cs", ".cpp", ".h", ".hpp", ".java", ".go", ".rs"],
+    "web_files": [".html", ".htm", ".css", ".scss", ".sass", ".less"],
+    "data_config": [".json", ".yml", ".yaml", ".toml", ".xml", ".cfg", ".ini"],
+    "documentation": [".md", ".txt", ".rst", ".adoc"],
+    "all_supported": [".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"]
+  },
+  "path_customization": {
+    "windows_paths": [
+      "Replace '/path/to/your/filesystem_server' with your actual path like 'D:/Projects/filesystem_server'",
+      "Use forward slashes (/) or escaped backslashes (\\\\) in JSON",
+      "Common locations: 'C:/Users/username/Documents/filesystem_server' or 'D:/Projects/filesystem_server'"
+    ],
+    "linux_mac_paths": [
+      "Replace '/path/to/your/filesystem_server' with your actual path like '/home/username/projects/filesystem_server'",
+      "Use 'python3' instead of 'python' if needed",
+      "Common locations: '/home/username/projects/filesystem_server' or '/Users/username/projects/filesystem_server'"
+    ],
+    "directory_examples": [
+      "Windows: 'D:/projects', 'C:/source/repos', 'D:/development'",
+      "Linux: '/home/user/projects', '/home/user/development', '/opt/projects'",
+      "macOS: '/Users/username/projects', '/Users/username/development'"
+    ]
+  },
+  "format_detection": {
+    "how_to_choose": [
+      "Check your MCP client documentation for the correct format",
+      "GitHub Copilot uses 'servers' format (format_1)",
+      "Some older MCP clients may use 'mcpServers' wrapper (format_2)",
+      "If unsure, try format_1 first as it's more common"
+    ],
+    "validation": [
+      "Test your configuration with the init() tool",
+      "Check MCP client logs for connection issues",
+      "Verify file paths exist and are accessible"
+    ]
+  },
+  "benefits": [
+    "No separate config.json file needed for MCP usage",
+    "Configuration embedded in MCP client setup",
+    "Easy to customize per MCP client instance", 
+    "Version control friendly",
+    "Perfect for Visual Studio 2022 integration",
+    "Self-documenting configuration",
+    "Cross-platform compatibility"
+  ],
+  "migration_from_config_json": {
+    "step1": "Copy values from your current config.json",
+    "step2": "Add them as --allowed-dirs and --allowed-extensions arguments",
+    "step3": "Update your MCP client configuration using the correct format",
+    "step4": "Test with init() tool to verify it works",
+    "step5": "Optionally remove config.json (it still works as fallback)"
+  }
+}

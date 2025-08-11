@@ -1,8 +1,8 @@
-# FileSystem MCP Server
+﻿# FileSystem MCP Server
 
 A Model Context Protocol (MCP) server that provides filesystem access tools for AI assistants like GitHub Copilot. This server is **specifically designed for local development environments** such as **Visual Studio 2022**, Visual Studio Code (without workspace files), and other IDEs that don't rely on code-workspace configurations.
 
-## ?? Target Environment
+## 🎯 Target Environment
 
 This MCP server is optimized for:
 - **Visual Studio 2022** development workflows
@@ -16,8 +16,9 @@ This MCP server is optimized for:
 - **Directory Traversal**: List contents of allowed directories
 - **File Reading**: Read contents of files with allowed extensions  
 - **Directory Validation**: Check accessibility of configured directories
-- **Security**: Access restricted to configured directories and file types
-- **Configuration**: JSON-based configuration for easy setup
+- **Hybrid Configuration**: Command-line arguments (MCP) + config.json fallback (debugging)
+- **Visual Studio 2022 Debugging**: No-argument startup support
+- **Security**: Access restricted to explicitly specified directories and file types
 - **Local Development Focus**: Perfect for Visual Studio 2022 and similar environments
 
 ## Installation
@@ -29,126 +30,165 @@ This MCP server is optimized for:
    uv sync
    ```
 
-## Configuration
+## Configuration Options
 
-Edit the `config.json` file to specify your local development directories:
-- `allowed_dirs`: List of directory paths that can be accessed (your project folders)
-- `allowed_extensions`: List of file extensions that can be read
+### Option 1: Config.json File (Simplest - Recommended for Beginners)
 
-Example configuration for local development:
+**The easiest way to get started!** Create a `config.json` file:
+
+**For debugging (Visual Studio 2022):**
+- Place `config.json` in the same directory as `app.py` (`D:\Projects\filesystem_server\`)
+
+**For MCP server usage:**
+- Place `config.json` in the same folder as your `.mcp.json` file (usually `C:\Users\YourUsername\`)
+
 ```json
 {
   "allowed_dirs": [
     "C:/Users/YourUsername/Documents/projects",
-    "G:/projects",
-    "D:/development",
-    "C:/source/repos"
+    "D:/projects",
+    "D:/Webs"
   ],
   "allowed_extensions": [
     ".py", ".js", ".ts", ".json", ".md", ".txt",
-    ".yml", ".yaml", ".toml", ".cfg", ".ini",
-    ".cs", ".cpp", ".h", ".hpp", ".xml", ".xaml"
+    ".yml", ".yaml", ".toml", ".cfg", ".ini", ".cs",
+    ".css", ".scss", ".htm", ".html", ".xml", ".xaml"
   ]
 }
 ```
 
-## Usage
+**Benefits:**
+- ✅ **No command-line arguments needed**
+- ✅ **Perfect for Visual Studio 2022 debugging** (just press F5)
+- ✅ **Works with MCP clients when placed in correct location**
+- ✅ **Easy to edit and modify**
+- ✅ **Great for testing and development**
 
-Start the MCP server:
+**Usage:**
 ```bash
-uv run app.py
+# For debugging in Visual Studio 2022:
+python app.py  # Uses config.json from same directory as app.py
+
+# For MCP server usage:
+# The MCP client automatically finds config.json in the .mcp.json directory
 ```
 
-The server will display connection information including MCP client configuration examples tailored for your development environment.
+**Important Location Notes:**
+- 🔧 **Debugging**: `config.json` goes next to `app.py`
+- 🌐 **MCP Server**: `config.json` goes next to `.mcp.json` 
+- 📁 **Different locations** for different use cases!
+
+### Option 2: Command-Line Arguments (Advanced - For MCP Clients)
+
+Best for production MCP client configurations where you want everything in one place:
+
+```bash
+python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
+```
+
+**MCP Client Configuration:**
+```json
+{
+  "servers": {
+    "filesystem-server": {
+      "command": "python",
+      "args": [
+        "D:/Projects/filesystem_server/app.py",
+        "--allowed-dirs", "D:/projects", "D:/Webs",
+        "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt"
+      ],
+      "cwd": "D:/Projects/filesystem_server"
+    }
+  }
+}
+```
+
+**Benefits:**
+- ✅ **Self-contained configuration**
+- ✅ **No external config files needed**
+- ✅ **Version control friendly**
+- ✅ **Explicit and visible in MCP setup**
+
+### Option 3: Hybrid Approach (Best of Both Worlds)
+
+The server automatically uses **command-line arguments first**, then **falls back to config.json** if no arguments provided.
+
+**How it works:**
+- **MCP clients**: Use command-line arguments (Option 2)
+- **Visual Studio debugging**: Automatically uses config.json (Option 1)
+- **Priority**: Command-line args override config.json when present
+
+**Benefits:**
+- ✅ **Works for both MCP clients and debugging**
+- ✅ **No conflicts between different usage scenarios**
+- ✅ **Flexible and developer-friendly**
+- ✅ **Choose the best option for each situation**
+
+## Usage
+
+### Command Line Examples
+
+```bash
+# With command line arguments (MCP clients):
+python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
+
+# Using config.json fallback (Visual Studio 2022 debugging):
+python app.py
+
+# Show MCP configuration help:
+python app.py --help-mcp
+```
 
 **Available Tools:**
 
-1. `init()` - **NEW!** Validates accessibility of configured directories
+1. `init()` - Validates accessibility of configured directories
    - Returns `{"message": "OK", "isError": false}` if all directories accessible
    - Returns error details if any directories are inaccessible
+   - Shows configuration source (command-line args vs config file)
    - Use this to verify your configuration before using other tools
 
 2. `list_directory(directory)` - Lists files and subdirectories in a given directory
 
 3. `read_file(file_path)` - Reads the content of a specified file
 
-## MCP Client Configuration
 
-### For Visual Studio 2022 & Local Development
+## Why This Hybrid Approach is Perfect
 
-Add this to your MCP client configuration file:
-
-**Recommended configuration (using uv):**
-```json
-{
-  "mcpServers": {
-    "filesystem-server": {
-      "command": "uv",
-      "args": ["run", "app.py"],
-      "cwd": "G:/Projects/filesystem_server"
-    }
-  }
-}
-```
-
-**Alternative configuration (direct Python):**
-```json
-{
-  "mcpServers": {
-    "filesystem-server": {
-      "command": "python",
-      "args": ["G:/Projects/filesystem_server/app.py"],
-      "cwd": "G:/Projects/filesystem_server"
-    }
-  }
-}
-```
-
-### Why This Server is Perfect for Visual Studio 2022
-
-- ? **No workspace dependencies**: Works with individual solution/project folders
-- ? **Simple configuration**: Just edit `config.json` with your project paths
-- ? **Local file access**: Direct access to your development directories
-- ? **IDE agnostic**: Works with Visual Studio 2022, VS Code, and other editors
-- ? **Security focused**: Only accesses directories you explicitly allow
-- ? **Configuration validation**: `init()` tool verifies setup before use
-
-## Development Workflow Integration
-
-This server integrates seamlessly with:
-- **Visual Studio 2022 solutions and projects**
-- **Individual project folders** (no multi-root workspace required)
-- **Local development directories** on Windows, macOS, and Linux
-- **Standard development environments** without complex configuration
+- ✅ **MCP clients**: Use efficient command-line arguments
+- ✅ **Visual Studio 2022**: Zero-friction debugging with config.json fallback
+- ✅ **No conflicts**: Priority system handles both scenarios gracefully
+- ✅ **Developer-friendly**: Works however you want to run it
+- ✅ **Best of both worlds**: MCP efficiency + debugging convenience
 
 ## Getting Started
 
-1. **Test your configuration** by calling the `init()` tool first
-2. **If init() returns errors**, check your `config.json` file:
-   - Verify directory paths exist
-   - Check directory permissions
-   - Ensure paths use correct format for your OS
-3. **Once init() returns "OK"**, use `list_directory()` and `read_file()` tools
+1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
+2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
+3. **Test your configuration** by calling the `init()` tool first
+4. **If init() returns errors**, check your directory paths and permissions
+
+## Visual Studio 2022 Debugging
+
+**Perfect debugging experience:**
+- ✅ No command-line arguments needed
+- ✅ Just press F5 to start debugging
+- ✅ Automatically uses config.json
+- ✅ Set breakpoints and debug normally
+- ✅ Full IntelliSense and debugging support
+
+**Debugging setup:**
+1. Open the project in Visual Studio 2022
+2. Ensure `config.json` exists (already created for you)
+3. Press F5 or Debug > Start Debugging
+4. Server starts with your configured directories
 
 ## Security
 
-- Only directories listed in `allowed_dirs` can be accessed
-- Only files with extensions in `allowed_extensions` can be read
+- Only directories specified in `--allowed-dirs` or config.json can be accessed
+- Only files with extensions in `--allowed-extensions` or config.json can be read
 - All paths are validated before access
 - The server runs with the permissions of the user account
 - **Perfect for local development**: Secure access to your project directories
-- **Configuration validation**: `init()` tool helps identify permission issues
-
-## Integration
-
-This server is designed to work with MCP-compatible AI assistants and can be configured in your MCP client configuration file. The server communicates via stdio (standard input/output) transport, making it ideal for development environments like Visual Studio 2022.
-
-**Key Benefits for Local Development:**
-- No complex workspace setup required
-- Works with existing project structures
-- Simple JSON configuration
-- Secure, controlled filesystem access
-- Built-in configuration validation
 
 ## Error Handling
 
@@ -156,32 +196,35 @@ The server provides detailed error messages for:
 - Unauthorized directory access
 - Invalid file paths
 - Unsupported file extensions
-- Missing configuration files
+- Missing configuration (shows helpful guidance for both MCP and debugging scenarios)
 - Directory accessibility issues (via `init()` tool)
 
 ## Troubleshooting
 
-### Common Issues in Visual Studio 2022
+### MCP Configuration Issues
 
-1. **Start with the `init()` tool** to validate your configuration
-2. If `init()` reports errors:
-   - Ensure your project directories are listed in `allowed_dirs`
-   - Verify directories exist and are accessible
-   - Check file permissions on directories
-3. Ensure the MCP client configuration points to the correct server path
-4. Check that file extensions you want to access are in `allowed_extensions`
-5. Make sure the server is running before connecting your MCP client
+Your original config had a **missing comma** after `"D:/Webs"`. The corrected version above fixes this.
 
-### Example `init()` Tool Usage
+### Visual Studio 2022 Debugging
 
-```javascript
-// Call the init tool to validate configuration
-const result = await init();
+1. **Ensure config.json exists** (already created for your directories)
+2. **Start with the `init()` tool** to validate your configuration
+3. **Set breakpoints** and debug normally
+4. **Check output window** for configuration source confirmation
 
-if (result.isError) {
-  console.log("Configuration issues:", result.message);
-  console.log("Details:", result.details);
-} else {
-  console.log("All directories accessible:", result.message);
-  // Now safe to use list_directory() and read_file()
-}
+### Common Issues
+
+1. **Missing configuration**: The server shows helpful messages for both MCP and debugging scenarios
+2. **Path access errors**: Verify your directories exist and are accessible
+3. **Permission issues**: Check directory permissions on your configured paths
+4. **MCP client issues**: Use the corrected configuration above
+
+## Command Line Reference
+
+```bash
+python app.py --help                         # Show help
+python app.py --help-mcp                     # Show MCP configuration examples  
+python app.py --allowed-dirs DIR1 DIR2       # Set allowed directories
+python app.py --allowed-extensions EXT1 EXT2 # Set allowed extensions
+python app.py --config custom.json           # Use custom config file
+python app.py                                # Use config.json fallback (debugging)
