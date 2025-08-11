@@ -15,6 +15,7 @@ This MCP server is optimized for:
 
 - **Directory Traversal**: List contents of allowed directories
 - **File Reading**: Read contents of files with allowed extensions  
+- **Directory Validation**: Check accessibility of configured directories
 - **Security**: Access restricted to configured directories and file types
 - **Configuration**: JSON-based configuration for easy setup
 - **Local Development Focus**: Perfect for Visual Studio 2022 and similar environments
@@ -61,8 +62,15 @@ uv run app.py
 The server will display connection information including MCP client configuration examples tailored for your development environment.
 
 **Available Tools:**
-1. `list_directory(directory)` - Lists files and subdirectories in a given directory
-2. `read_file(file_path)` - Reads the content of a specified file
+
+1. `init()` - **NEW!** Validates accessibility of configured directories
+   - Returns `{"message": "OK", "isError": false}` if all directories accessible
+   - Returns error details if any directories are inaccessible
+   - Use this to verify your configuration before using other tools
+
+2. `list_directory(directory)` - Lists files and subdirectories in a given directory
+
+3. `read_file(file_path)` - Reads the content of a specified file
 
 ## MCP Client Configuration
 
@@ -103,6 +111,7 @@ Add this to your MCP client configuration file:
 - ? **Local file access**: Direct access to your development directories
 - ? **IDE agnostic**: Works with Visual Studio 2022, VS Code, and other editors
 - ? **Security focused**: Only accesses directories you explicitly allow
+- ? **Configuration validation**: `init()` tool verifies setup before use
 
 ## Development Workflow Integration
 
@@ -112,6 +121,15 @@ This server integrates seamlessly with:
 - **Local development directories** on Windows, macOS, and Linux
 - **Standard development environments** without complex configuration
 
+## Getting Started
+
+1. **Test your configuration** by calling the `init()` tool first
+2. **If init() returns errors**, check your `config.json` file:
+   - Verify directory paths exist
+   - Check directory permissions
+   - Ensure paths use correct format for your OS
+3. **Once init() returns "OK"**, use `list_directory()` and `read_file()` tools
+
 ## Security
 
 - Only directories listed in `allowed_dirs` can be accessed
@@ -119,6 +137,7 @@ This server integrates seamlessly with:
 - All paths are validated before access
 - The server runs with the permissions of the user account
 - **Perfect for local development**: Secure access to your project directories
+- **Configuration validation**: `init()` tool helps identify permission issues
 
 ## Integration
 
@@ -129,6 +148,7 @@ This server is designed to work with MCP-compatible AI assistants and can be con
 - Works with existing project structures
 - Simple JSON configuration
 - Secure, controlled filesystem access
+- Built-in configuration validation
 
 ## Error Handling
 
@@ -137,11 +157,31 @@ The server provides detailed error messages for:
 - Invalid file paths
 - Unsupported file extensions
 - Missing configuration files
+- Directory accessibility issues (via `init()` tool)
 
 ## Troubleshooting
 
 ### Common Issues in Visual Studio 2022
-- Ensure the MCP client configuration points to the correct server path
-- Verify that your project directories are listed in `allowed_dirs`
-- Check that file extensions you want to access are in `allowed_extensions`
-- Make sure the server is running before connecting your MCP client
+
+1. **Start with the `init()` tool** to validate your configuration
+2. If `init()` reports errors:
+   - Ensure your project directories are listed in `allowed_dirs`
+   - Verify directories exist and are accessible
+   - Check file permissions on directories
+3. Ensure the MCP client configuration points to the correct server path
+4. Check that file extensions you want to access are in `allowed_extensions`
+5. Make sure the server is running before connecting your MCP client
+
+### Example `init()` Tool Usage
+
+```javascript
+// Call the init tool to validate configuration
+const result = await init();
+
+if (result.isError) {
+  console.log("Configuration issues:", result.message);
+  console.log("Details:", result.details);
+} else {
+  console.log("All directories accessible:", result.message);
+  // Now safe to use list_directory() and read_file()
+}

@@ -6,7 +6,7 @@ A secure filesystem access server for MCP clients.
 import os
 import json
 import sys
-from typing import List
+from typing import List, Dict, Any
 from mcp.server.fastmcp import FastMCP
 
 # Initialize the MCP server
@@ -34,6 +34,89 @@ def is_allowed_path(path: str) -> bool:
         if os.path.commonpath([abs_path, allowed]) == allowed:
             return True
     return False
+
+@mcp.tool()
+def init() -> Dict[str, Any]:
+    """
+    Initialize and verify accessibility of allowed directories.
+    
+    Returns:
+        A dictionary containing:
+        - message: Status message ("OK" if all directories accessible, error description if not)
+        - isError: Boolean indicating if there was an error
+        - details: Additional information about directory accessibility
+    """
+    if not allowed_dirs:
+        return {
+            "message": "No allowed directories configured in config.json",
+            "isError": True,
+            "details": {
+                "allowed_dirs": allowed_dirs,
+                "accessible_dirs": [],
+                "inaccessible_dirs": []
+            }
+        }
+    
+    accessible_dirs = []
+    inaccessible_dirs = []
+    error_details = []
+    
+    for directory in allowed_dirs:
+        try:
+            # Check if directory exists
+            if not os.path.exists(directory):
+                inaccessible_dirs.append(directory)
+                error_details.append(f"Directory does not exist: {directory}")
+                continue
+            
+            # Check if it's actually a directory
+            if not os.path.isdir(directory):
+                inaccessible_dirs.append(directory)
+                error_details.append(f"Path exists but is not a directory: {directory}")
+                continue
+            
+            # Check if we can read the directory
+            try:
+                os.listdir(directory)
+                accessible_dirs.append(directory)
+            except PermissionError:
+                inaccessible_dirs.append(directory)
+                error_details.append(f"Permission denied accessing directory: {directory}")
+            except Exception as e:
+                inaccessible_dirs.append(directory)
+                error_details.append(f"Error accessing directory {directory}: {str(e)}")
+                
+        except Exception as e:
+            inaccessible_dirs.append(directory)
+            error_details.append(f"Unexpected error checking directory {directory}: {str(e)}")
+    
+    # Determine if there are any errors
+    has_errors = len(inaccessible_dirs) > 0
+    
+    if has_errors:
+        error_message = f"Some allowed directories are not accessible: {', '.join(error_details)}"
+        return {
+            "message": error_message,
+            "isError": True,
+            "details": {
+                "allowed_dirs": allowed_dirs,
+                "accessible_dirs": accessible_dirs,
+                "inaccessible_dirs": inaccessible_dirs,
+                "error_details": error_details
+            }
+        }
+    else:
+        return {
+            "message": "OK",
+            "isError": False,
+            "details": {
+                "allowed_dirs": allowed_dirs,
+                "accessible_dirs": accessible_dirs,
+                "inaccessible_dirs": inaccessible_dirs,
+                "total_allowed": len(allowed_dirs),
+                "total_accessible": len(accessible_dirs)
+            }
+        }
 
 @mcp.tool()
 def list_directory(directory: str) -> List[str]:
@@ -119,7 +202,7 @@ def print_connection_info():
     print("\n?? Usage Instructions:")
     print("1. Add the configuration above to your MCP client")
     print("2. The server communicates via stdio (stdin/stdout)")
-    print("3. Available tools: list_directory(), read_file()")
+    print("3. Available tools: init(), list_directory(), read_file()")
     print("4. Server will respect the allowed_dirs and allowed_extensions in config.json")
     print("="*60)
 

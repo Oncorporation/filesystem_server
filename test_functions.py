@@ -15,7 +15,7 @@ from app import list_directory, read_file, is_allowed_path, allowed_dirs, allowe
 
 def test_list_directory():
     """Test the list_directory function."""
-    test_directory = "G:/projects/"
+    test_directory = "G:/projects/Gradio-Hackathon-certificate-generator"
     
     print("="*60)
     print("?? TESTING LIST_DIRECTORY FUNCTION")
