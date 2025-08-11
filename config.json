@@ -1,0 +1,18 @@
+{
+  "allowed_dirs": [
+    "G:/projects"
+  ],
+  "allowed_extensions": [
+    ".py",
+    ".js",
+    ".ts",
+    ".json",
+    ".md",
+    ".txt",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".cfg",
+    ".ini"
+  ]
+}
