@@ -1,7 +1,9 @@
 {
   "allowed_dirs": [
+    "G:/projects",
     "D:/projects",
-    "D:/Webs"
+    "D:/Webs",
+    "F:/sd/"
   ],
   "allowed_extensions": [
     ".py",

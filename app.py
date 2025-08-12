@@ -13,6 +13,33 @@ from mcp.server.fastmcp import FastMCP
 # Initialize the MCP server
 mcp = FastMCP(name="FileSystemServer")
 
+def normalize_path(path: str) -> str:
+    """
+    Normalize a path for cross-platform compatibility.
+    
+    Handles Windows-style backslashes by converting them to forward slashes,
+    resolves relative paths to absolute paths, and normalizes the result.
+    
+    Args:
+        path: The path to normalize (can contain backslashes or forward slashes)
+    
+    Returns:
+        A normalized absolute path
+    
+    Examples:
+        normalize_path("F:\\sd\\wipes") -> "F:/sd/wipes" (on Windows)
+        normalize_path("F:/sd/wipes") -> "F:/sd/wipes" 
+        normalize_path("./relative/path") -> "/full/absolute/path"
+    """
+    # Convert backslashes to forward slashes for consistency
+    normalized = path.replace('\\', '/')
+    
+    # Convert to absolute path and normalize
+    abs_path = os.path.abspath(normalized)
+    
+    # Convert back to forward slashes (os.path.abspath might add backslashes on Windows)
+    return abs_path.replace('\\', '/')
+
 def parse_arguments():
     """Parse command line arguments for configuration."""
     parser = argparse.ArgumentParser(
@@ -28,13 +55,15 @@ Examples:
   
   # Show MCP configuration help:
   python app.py --help-mcp
+  
+Note: Paths can use either forward slashes (/) or backslashes (\) - they will be automatically normalized.
         """
     )
     
     parser.add_argument(
         '--allowed-dirs', '--allowed_dirs',
         nargs='*',
-        help='List of allowed directory paths (e.g., --allowed-dirs "D:/projects" "D:/Webs")',
+        help='List of allowed directory paths (e.g., --allowed-dirs "D:/projects" "D:\\Webs")',
         required=False,
         default=None
     )
@@ -75,33 +104,41 @@ def load_configuration():
     config_source = "none"
     
     # Try command line arguments first
-    if args.allowed_dirs is not None:
-        allowed_dirs = [os.path.abspath(d) for d in args.allowed_dirs]
+    # Fix: Check if args are provided AND have content, not just not None
+    if args.allowed_dirs is not None and len(args.allowed_dirs) > 0:
+        # Normalize all directory paths for cross-platform compatibility
+        allowed_dirs = [normalize_path(d) for d in args.allowed_dirs]
         config_source = "command_line_args"
         print(f"[OK] Using allowed_dirs from command line: {args.allowed_dirs}")
+        print(f"[OK] Normalized paths: {allowed_dirs}")
     
-    if args.allowed_extensions is not None:
+    if args.allowed_extensions is not None and len(args.allowed_extensions) > 0:
         allowed_extensions = [ext.lower() for ext in args.allowed_extensions]
         if config_source != "command_line_args":
             config_source = "command_line_args"
         print(f"[OK] Using allowed_extensions from command line: {args.allowed_extensions}")
     
-    # Fallback to config.json if command-line args not provided
+    # Fallback to config.json if command-line args not provided OR empty
     if not allowed_dirs or not allowed_extensions:
         try:
             with open(args.config, 'r') as f:
                 config = json.load(f)
             
             if not allowed_dirs:
-                allowed_dirs = [os.path.abspath(d) for d in config.get('allowed_dirs', [])]
+                config_dirs = config.get('allowed_dirs', [])
+                # Normalize all directory paths from config file too
+                allowed_dirs = [normalize_path(d) for d in config_dirs]
                 if allowed_dirs:
-                    config_source = "config_file"
-                    print(f"[FILE] Using allowed_dirs from {args.config}: {config.get('allowed_dirs', [])}")
+                    if config_source == "none":
+                        config_source = "config_file"
+                    print(f"[FILE] Using allowed_dirs from {args.config}: {config_dirs}")
+                    print(f"[FILE] Normalized paths: {allowed_dirs}")
             
             if not allowed_extensions:
                 allowed_extensions = [ext.lower() for ext in config.get('allowed_extensions', [])]
-                if allowed_extensions and config_source != "command_line_args":
-                    config_source = "config_file"
+                if allowed_extensions:
+                    if config_source == "none":
+                        config_source = "config_file"
                     print(f"[FILE] Using allowed_extensions from {args.config}: {config.get('allowed_extensions', [])}")
                     
         except FileNotFoundError:
@@ -109,6 +146,7 @@ def load_configuration():
                 print(f"[WARN] {args.config} not found and no command line arguments provided.")
                 print("   For debugging in Visual Studio 2022: Create config.json file")
                 print("   For MCP clients: Use command line arguments")
+                print("   Note: Paths can use either forward slashes (/) or backslashes (\\)")
         except Exception as e:
             print(f"[ERROR] Error loading {args.config}: {e}. Using command line args or defaults.")
     
@@ -117,6 +155,7 @@ def load_configuration():
         print("[WARN] No allowed directories configured")
         print("   For debugging: Create config.json or use --allowed-dirs")
         print("   For MCP: Add --allowed-dirs to your MCP client configuration")
+        print("   Note: Paths can use either forward slashes (/) or backslashes (\\)")
     
     if not allowed_extensions:
         print("[WARN] No allowed extensions configured")
@@ -146,6 +185,13 @@ def show_mcp_help():
   }
 }''')
     
+    print("\nWindows Users - Both Path Formats Work:")
+    print("-" * 50)  
+    print("[OK] Forward slashes:  \"D:/projects\", \"F:/sd/wipes\"")
+    print("[OK] Backslashes:     \"D:\\\\projects\", \"F:\\\\sd\\\\wipes\"")
+    print("[OK] Mixed formats:    \"D:/projects\", \"F:\\\\sd\\\\wipes\"")
+    print("   (Paths are automatically normalized)")
+    
     print("\nAlternative: Debugging Configuration (uses config.json):")
     print("-" * 50)
     print('''{
@@ -160,6 +206,7 @@ def show_mcp_help():
     print("  [OK] Command-line args: Best for MCP clients")
     print("  [OK] config.json fallback: Perfect for Visual Studio 2022 debugging")
     print("  [OK] Hybrid approach: Works for both scenarios")
+    print("  [OK] Path normalization: Handles both / and \\ automatically")
     print("  [OK] No config file conflicts: Priority system handles both")
     
     print("="*70)
@@ -172,10 +219,13 @@ def is_allowed_path(path: str) -> bool:
     if not allowed_dirs:
         return False
     
-    abs_path = os.path.abspath(path)
+    # Normalize the input path for consistent comparison
+    normalized_path = normalize_path(path)
+    
     for allowed in allowed_dirs:
         try:
-            if os.path.commonpath([abs_path, allowed]) == allowed:
+            # Both paths are now normalized, so comparison should work reliably
+            if os.path.commonpath([normalized_path, allowed]) == allowed:
                 return True
         except ValueError:
             # Paths on different drives on Windows
@@ -202,7 +252,7 @@ def init() -> Dict[str, Any]:
                 "accessible_dirs": [],
                 "inaccessible_dirs": [],
                 "configuration_source": config_source,
-                "help": "For MCP: Add --allowed-dirs argument. For debugging: Create config.json file."
+                "help": "For MCP: Add --allowed-dirs argument. For debugging: Create config.json file. Paths can use / or \\ separators."
             }
         }
     
@@ -226,7 +276,7 @@ def init() -> Dict[str, Any]:
     
     for directory in allowed_dirs:
         try:
-            # Check if directory exists
+            # Check if directory exists (directory is already normalized)
             if not os.path.exists(directory):
                 inaccessible_dirs.append(directory)
                 error_details.append(f"Directory does not exist: {directory}")
@@ -281,7 +331,8 @@ def init() -> Dict[str, Any]:
                 "inaccessible_dirs": inaccessible_dirs,
                 "total_allowed": len(allowed_dirs),
                 "total_accessible": len(accessible_dirs),
-                "configuration_source": config_source
+                "configuration_source": config_source,
+                "path_normalization": "Enabled - accepts both / and \\ path separators"
             }
         }
 
@@ -291,7 +342,7 @@ def list_directory(directory: str) -> List[str]:
     List files and subdirectories in the given directory.
     
     Args:
-        directory: The absolute or relative path to the directory.
+        directory: The absolute or relative path to the directory (supports both / and \\ separators).
     
     Returns:
         A list of file and directory names in the directory.
@@ -299,11 +350,16 @@ def list_directory(directory: str) -> List[str]:
     Raises:
         ValueError: If the directory is not allowed or does not exist.
     """
+    # Normalize the path to handle both Windows and Unix style separators
+    normalized_dir = normalize_path(directory)
+    
     if not is_allowed_path(directory):
-        raise ValueError("Access to this directory is not allowed.")
-    if not os.path.isdir(directory):
-        raise ValueError("The provided path is not a directory or does not exist.")
-    return os.listdir(directory)
+        raise ValueError(f"Access to this directory is not allowed. Requested: {directory}, Normalized: {normalized_dir}")
+    
+    if not os.path.isdir(normalized_dir):
+        raise ValueError(f"The provided path is not a directory or does not exist: {normalized_dir}")
+    
+    return os.listdir(normalized_dir)
 
 @mcp.tool()
 def read_file(file_path: str) -> str:
@@ -311,7 +367,7 @@ def read_file(file_path: str) -> str:
     Read the content of a file.
     
     Args:
-        file_path: The absolute or relative path to the file.
+        file_path: The absolute or relative path to the file (supports both / and \\ separators).
     
     Returns:
         The text content of the file.
@@ -319,14 +375,20 @@ def read_file(file_path: str) -> str:
     Raises:
         ValueError: If the file is not allowed, does not exist, or has a disallowed extension.
     """
+    # Normalize the path to handle both Windows and Unix style separators
+    normalized_file = normalize_path(file_path)
+    
     if not is_allowed_path(file_path):
-        raise ValueError("Access to this file is not allowed.")
-    if not os.path.isfile(file_path):
-        raise ValueError("The provided path is not a file or does not exist.")
-    ext = os.path.splitext(file_path)[1].lower()
+        raise ValueError(f"Access to this file is not allowed. Requested: {file_path}, Normalized: {normalized_file}")
+    
+    if not os.path.isfile(normalized_file):
+        raise ValueError(f"The provided path is not a file or does not exist: {normalized_file}")
+    
+    ext = os.path.splitext(normalized_file)[1].lower()
     if ext not in allowed_extensions:
         raise ValueError(f"This file type '{ext}' is not allowed for reading. Allowed extensions: {allowed_extensions}")
-    with open(file_path, 'r', encoding='utf-8') as f:
+    
+    with open(normalized_file, 'r', encoding='utf-8') as f:
         return f.read()
 
 def print_connection_info():
@@ -342,6 +404,7 @@ def print_connection_info():
     print(f"Python Path: {python_path}")
     print(f"Configuration Source: {config_source}")
     print(f"Transport: stdio (Standard Input/Output)")
+    print(f"Path Normalization: [ENABLED] (supports both / and \\ separators)")
     
     if config_source == "config_file":
         print("\n[DEBUG] DEBUGGING MODE (using config.json)")
@@ -368,6 +431,7 @@ def print_connection_info():
     print("2. For Visual Studio 2022 debugging: Uses config.json fallback")
     print("3. Available tools: init(), list_directory(), read_file()")
     print("4. Use --help-mcp for more configuration examples")
+    print("5. Path formats: Both D:/path and D:\\path work automatically")
     print("="*60)
 
 def main():

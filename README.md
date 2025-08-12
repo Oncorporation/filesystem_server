@@ -18,6 +18,7 @@ This MCP server is optimized for:
 - **Directory Validation**: Check accessibility of configured directories
 - **Hybrid Configuration**: Command-line arguments (MCP) + config.json fallback (debugging)
 - **Visual Studio 2022 Debugging**: No-argument startup support
+- **Cross-Platform Path Support**: Automatically handles both Windows (`\`) and Unix (`/`) path separators
 - **Security**: Access restricted to explicitly specified directories and file types
 - **Local Development Focus**: Perfect for Visual Studio 2022 and similar environments
 
@@ -228,3 +229,38 @@ python app.py --allowed-dirs DIR1 DIR2       # Set allowed directories
 python app.py --allowed-extensions EXT1 EXT2 # Set allowed extensions
 python app.py --config custom.json           # Use custom config file
 python app.py                                # Use config.json fallback (debugging)
+```
+
+## Cross-Platform Path Support
+
+The filesystem server automatically normalizes paths to handle different operating system conventions:
+
+### ✅ **Windows Users - Both Formats Work**
+```json
+{
+  "allowed_dirs": [
+    "D:\\projects",           // Windows-style backslashes
+    "F:/sd/wipes",           // Unix-style forward slashes  
+    "C:\\Users\\Me\\Docs"    // Mixed formats work too
+  ]
+}
+```
+
+### ✅ **Automatic Path Normalization**
+- **Input**: `"F:\sd\wipes"` (Windows natural format)
+- **Normalized**: `"F:/sd/wipes"` (Python-friendly format)
+- **Result**: ✅ Works seamlessly, no errors!
+
+### ✅ **MCP Tool Examples**
+```python
+# All of these work identically:
+list_directory("F:\\sd\\wipes")    # Windows format
+list_directory("F:/sd/wipes")      # Unix format  
+list_directory("F:\\sd/wipes")     # Mixed format
+```
+
+### **Why This Matters**
+- 🪟 **Windows users** can naturally type `F:\sd\wipes`
+- 🐧 **Unix users** can use traditional `F:/sd/wipes`
+- 🔧 **No more path format errors** - everything just works
+- 🛡️ **Security checks work correctly** regardless of separator style
