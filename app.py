@@ -1,4 +1,4 @@
-"""
+﻿"""
 FileSystem MCP Server
 A secure filesystem access server for MCP clients.
 """
@@ -7,7 +7,8 @@ import os
 import sys
 import json
 import argparse
-from typing import List, Dict, Any
+import time
+from typing import List, Dict, Any, Optional, Callable
 from mcp.server.fastmcp import FastMCP
 
 # Initialize the MCP server
@@ -56,7 +57,7 @@ Examples:
   # Show MCP configuration help:
   python app.py --help-mcp
   
-Note: Paths can use either forward slashes (/) or backslashes (\) - they will be automatically normalized.
+Note: Paths can use either forward slashes (/) or backslashes (\\) - they will be automatically normalized.
         """
     )
     
@@ -121,7 +122,7 @@ def load_configuration():
     # Fallback to config.json if command-line args not provided OR empty
     if not allowed_dirs or not allowed_extensions:
         try:
-            with open(args.config, 'r') as f:
+            with open(args.config, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             
             if not allowed_dirs:
@@ -215,7 +216,10 @@ def show_mcp_help():
 allowed_dirs, allowed_extensions, config_source = load_configuration()
 
 def is_allowed_path(path: str) -> bool:
-    """Check if the given path is within one of the allowed directories."""
+    """
+    Check if the given path is within one of the allowed directories.
+    This check is case-insensitive on Windows.
+    """
     if not allowed_dirs:
         return False
     
@@ -223,26 +227,35 @@ def is_allowed_path(path: str) -> bool:
     normalized_path = normalize_path(path)
     
     for allowed in allowed_dirs:
-        try:
-            # Both paths are now normalized, so comparison should work reliably
-            if os.path.commonpath([normalized_path, allowed]) == allowed:
+        # For Windows, compare paths case-insensitively
+        if os.name == 'nt':
+            if normalized_path.lower().startswith(allowed.lower()):
                 return True
-        except ValueError:
-            # Paths on different drives on Windows
-            continue
+        else:
+            # For other OS, use case-sensitive comparison
+            if normalized_path.startswith(allowed):
+                return True
     return False
 
 @mcp.tool()
-def init() -> Dict[str, Any]:
+def init(directory: str, file_path: str ) -> Dict[str, Any]:
     """
     Initialize and verify accessibility of allowed directories.
+    Optionally list a directory and/or read a file if parameters are provided.
+    
+    Args:
+        directory: Optional directory path to list contents
+        file_path: Optional file path to read content
     
     Returns:
         A dictionary containing:
         - message: Status message ("OK" if all directories accessible, error description if not)
         - isError: Boolean indicating if there was an error
         - details: Additional information about directory accessibility
+        - directory_contents: Optional list of directory contents if directory parameter provided
+        - file_content: Optional file content if file_path parameter provided
     """
+    # Start with the standard init validation
     if not allowed_dirs:
         return {
             "message": "No allowed directories configured. Use --allowed-dirs argument or create config.json for debugging.",
@@ -274,41 +287,42 @@ def init() -> Dict[str, Any]:
     inaccessible_dirs = []
     error_details = []
     
-    for directory in allowed_dirs:
+    for directory_path in allowed_dirs:
         try:
             # Check if directory exists (directory is already normalized)
-            if not os.path.exists(directory):
-                inaccessible_dirs.append(directory)
-                error_details.append(f"Directory does not exist: {directory}")
+            if not os.path.exists(directory_path):
+                inaccessible_dirs.append(directory_path)
+                error_details.append(f"Directory does not exist: {directory_path}")
                 continue
             
             # Check if it's actually a directory
-            if not os.path.isdir(directory):
-                inaccessible_dirs.append(directory)
-                error_details.append(f"Path exists but is not a directory: {directory}")
+            if not os.path.isdir(directory_path):
+                inaccessible_dirs.append(directory_path)
+                error_details.append(f"Path exists but is not a directory: {directory_path}")
                 continue
             
             # Check if we can read the directory
             try:
-                os.listdir(directory)
-                accessible_dirs.append(directory)
+                os.listdir(directory_path)
+                accessible_dirs.append(directory_path)
             except PermissionError:
-                inaccessible_dirs.append(directory)
-                error_details.append(f"Permission denied accessing directory: {directory}")
+                inaccessible_dirs.append(directory_path)
+                error_details.append(f"Permission denied accessing directory: {directory_path}")
             except Exception as e:
-                inaccessible_dirs.append(directory)
-                error_details.append(f"Error accessing directory {directory}: {str(e)}")
+                inaccessible_dirs.append(directory_path)
+                error_details.append(f"Error accessing directory {directory_path}: {str(e)}")
                 
         except Exception as e:
-            inaccessible_dirs.append(directory)
-            error_details.append(f"Unexpected error checking directory {directory}: {str(e)}")
+            inaccessible_dirs.append(directory_path)
+            error_details.append(f"Unexpected error checking directory {directory_path}: {str(e)}")
     
     # Determine if there are any errors
     has_errors = len(inaccessible_dirs) > 0
     
+    # Build the base response
     if has_errors:
         error_message = f"Some allowed directories are not accessible: {', '.join(error_details)}"
-        return {
+        response = {
             "message": error_message,
             "isError": True,
             "details": {
@@ -321,7 +335,7 @@ def init() -> Dict[str, Any]:
             }
         }
     else:
-        return {
+        response = {
             "message": "OK",
             "isError": False,
             "details": {
@@ -335,31 +349,194 @@ def init() -> Dict[str, Any]:
                 "path_normalization": "Enabled - accepts both / and \\ path separators"
             }
         }
+    
+    # If directory parameter is provided, call list_directory
+    if directory is not None:
+        try:
+            directory_contents = list_directory(directory, report_progress=True)
+            
+            # Handle the new return format from list_directory
+            if isinstance(directory_contents, dict):
+                if directory_contents.get("error", False):
+                    response["directory_error"] = directory_contents.get("error_message", "Unknown directory error")
+                    response["directory_progress_info"] = directory_contents.get("progress_info", {})
+                else:
+                    response["directory_contents"] = directory_contents.get("contents", [])
+                    response["directory_total_items"] = directory_contents.get("total_items", 0)
+                    response["directory_processing_time"] = directory_contents.get("processing_time", 0)
+                    response["directory_progress_info"] = directory_contents.get("progress_info", {})
+                    response["directory_listed"] = directory
+            else:
+                # Handle backward compatibility with list return
+                if directory_contents and len(directory_contents) > 0 and directory_contents[0] == "error":
+                    response["directory_error"] = directory_contents[1] if len(directory_contents) > 1 else "Unknown directory error"
+                else:
+                    response["directory_contents"] = directory_contents
+                    response["directory_listed"] = directory
+        except Exception as e:
+            response["directory_error"] = f"Error listing directory {directory}: {str(e)}"
+    
+    # If file_path parameter is provided, call read_file
+    if file_path is not None:
+        try:
+            file_content = read_file(file_path)
+            response["file_content"] = file_content
+            response["file_read"] = file_path
+        except Exception as e:
+            response["file_error"] = f"Error reading file {file_path}: {str(e)}"
+    
+    return response
 
 @mcp.tool()
-def list_directory(directory: str) -> List[str]:
+def list_directory(directory: str, report_progress: bool = False, batch_size: int = 100) -> Dict[str, Any]:
     """
-    List files and subdirectories in the given directory.
+    List files and subdirectories in the given directory with optional progress reporting.
     
     Args:
         directory: The absolute or relative path to the directory (supports both / and \\ separators).
+        report_progress: Whether to include progress information in the response.
+        batch_size: Number of items to process before reporting progress (default: 100).
     
     Returns:
-        A list of file and directory names in the directory.
-    
-    Raises:
-        ValueError: If the directory is not allowed or does not exist.
+        If report_progress is False: A list of file and directory names in the directory.
+        If report_progress is True: A dictionary containing:
+            - contents: List of file and directory names
+            - progress_info: Dictionary with progress details
+            - total_items: Total number of items found
+            - processing_time: Time taken to process the directory
+        
+        If an error occurs, returns a dictionary with "error" and "error_message" keys.
     """
-    # Normalize the path to handle both Windows and Unix style separators
-    normalized_dir = normalize_path(directory)
+    start_time = time.time()
     
-    if not is_allowed_path(directory):
-        raise ValueError(f"Access to this directory is not allowed. Requested: {directory}, Normalized: {normalized_dir}")
+    try:
+        # Normalize the path to handle both Windows and Unix style separators
+        normalized_dir = normalize_path(directory)
     
-    if not os.path.isdir(normalized_dir):
-        raise ValueError(f"The provided path is not a directory or does not exist: {normalized_dir}")
+        # Use the normalized path for the allowed path check
+        if not is_allowed_path(normalized_dir):
+            error_message = f"Access to this directory is not allowed. Requested: {directory}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "permission_check"}
+                }
+            return ["error", error_message]
     
-    return os.listdir(normalized_dir)
+        if not os.path.isdir(normalized_dir):
+            error_message = f"The provided path is not a directory or does not exist: Requested: {directory}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "directory_validation"}
+                }
+            return ["error", error_message]
+    
+        # List directory contents with progress reporting
+        try:
+            if report_progress:
+                # Get initial count estimate if possible
+                progress_info = {
+                    "status": "scanning",
+                    "stage": "directory_listing",
+                    "start_time": start_time
+                }
+            
+            directory_contents = os.listdir(normalized_dir)
+            total_items = len(directory_contents)
+            
+            if report_progress:
+                # For large directories, we can simulate processing in batches
+                processed_items = []
+                progress_updates = []
+                
+                for i, item in enumerate(directory_contents):
+                    processed_items.append(item)
+                    
+                    # Report progress every batch_size items or at the end
+                    if (i + 1) % batch_size == 0 or (i + 1) == total_items:
+                        current_time = time.time()
+                        progress_update = {
+                            "processed": i + 1,
+                            "total": total_items,
+                            "percentage": round(((i + 1) / total_items) * 100, 2),
+                            "elapsed_time": round(current_time - start_time, 3),
+                            "items_per_second": round((i + 1) / (current_time - start_time), 2) if current_time > start_time else 0
+                        }
+                        progress_updates.append(progress_update)
+                        
+                        # Add a small delay for demonstration purposes (remove in production)
+                        if total_items > batch_size and i + 1 < total_items:
+                            time.sleep(0.01)
+                
+                end_time = time.time()
+                processing_time = round(end_time - start_time, 3)
+                
+                return {
+                    "error": False,
+                    "contents": directory_contents,
+                    "total_items": total_items,
+                    "processing_time": processing_time,
+                    "progress_info": {
+                        "status": "completed",
+                        "stage": "finished",
+                        "final_progress": progress_updates[-1] if progress_updates else None,
+                        "progress_updates": progress_updates,
+                        "directory_path": directory,
+                        "normalized_path": normalized_dir
+                    }
+                }
+            else:
+                # Return simple list for backward compatibility
+                return directory_contents
+                
+        except PermissionError:
+            error_message = f"Permission denied accessing directory: {directory}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "permission_denied"}
+                }
+            return ["error", error_message]
+        except FileNotFoundError:
+            error_message = f"Directory not found: {directory}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "not_found"}
+                }
+            return ["error", error_message]
+        except OSError as e:
+            error_message = f"OS error accessing directory {directory}: {str(e)}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "os_error", "details": str(e)}
+                }
+            return ["error", error_message]
+        except Exception as e:
+            error_message = f"Error accessing directory {directory}: {str(e)}, Normalized: {normalized_dir}"
+            if report_progress:
+                return {
+                    "error": True,
+                    "error_message": error_message,
+                    "progress_info": {"status": "failed", "stage": "unexpected_error", "details": str(e)}
+                }
+            return ["error", error_message]
+    except Exception as e:
+        error_message = f"Unexpected error accessing directory {directory}: {str(e)}"
+        if report_progress:
+            return {
+                "error": True,
+                "error_message": error_message,
+                "progress_info": {"status": "failed", "stage": "outer_exception", "details": str(e)}
+            }
+        return ["error", error_message]
 
 @mcp.tool()
 def read_file(file_path: str) -> str:
@@ -378,7 +555,8 @@ def read_file(file_path: str) -> str:
     # Normalize the path to handle both Windows and Unix style separators
     normalized_file = normalize_path(file_path)
     
-    if not is_allowed_path(file_path):
+    # Use normalized path for consistency
+    if not is_allowed_path(normalized_file):
         raise ValueError(f"Access to this file is not allowed. Requested: {file_path}, Normalized: {normalized_file}")
     
     if not os.path.isfile(normalized_file):
@@ -388,8 +566,13 @@ def read_file(file_path: str) -> str:
     if ext not in allowed_extensions:
         raise ValueError(f"This file type '{ext}' is not allowed for reading. Allowed extensions: {allowed_extensions}")
     
-    with open(normalized_file, 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        with open(normalized_file, 'r', encoding='utf-8', errors='replace') as f:
+            return f.read()
+    except UnicodeDecodeError:
+        # Fallback for files that can't be decoded as UTF-8
+        with open(normalized_file, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
 
 def print_connection_info():
     """Print server connection information."""

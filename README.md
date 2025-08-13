@@ -1,6 +1,6 @@
 ﻿# FileSystem MCP Server
 
-A Model Context Protocol (MCP) server that provides filesystem access tools for AI assistants like GitHub Copilot. This server is **specifically designed for local development environments** such as **Visual Studio 2022**, Visual Studio Code (without workspace files), and other IDEs that don't rely on code-workspace configurations.
+Local MCP server for Visual Studio 2022 that provides code-workspace functionality by giving AI agents selective access to project folders and files
 
 ## 🎯 Target Environment
 
@@ -149,6 +149,9 @@ python app.py --help-mcp
    - Use this to verify your configuration before using other tools
 
 2. `list_directory(directory)` - Lists files and subdirectories in a given directory
+   - Returns a list of file and directory names on success
+   - Returns `["error", "error_message"]` if an error occurs (access denied, directory not found, etc.)
+   - No exceptions are raised - all errors are returned as part of the result list
 
 3. `read_file(file_path)` - Reads the content of a specified file
 
@@ -199,6 +202,12 @@ The server provides detailed error messages for:
 - Unsupported file extensions
 - Missing configuration (shows helpful guidance for both MCP and debugging scenarios)
 - Directory accessibility issues (via `init()` tool)
+
+**New Error Handling for list_directory():**
+- The `list_directory()` function now returns errors as part of the result list instead of raising exceptions
+- Error format: `["error", "detailed_error_message"]`
+- This makes it easier for MCP clients to handle errors gracefully without exception handling
+- Successful calls return the normal list of directory contents
 
 ## Troubleshooting
 
