@@ -295,5 +295,18 @@ list_directory("F:\\sd/wipes")     # Mixed format
 - 🔧 **No more path format errors** - everything just works
 - 🛡️ **Security checks work correctly** regardless of separator style
 
+## Advanced & Real-World MCP Configuration Examples
+
+For more advanced, platform-specific, or legacy MCP client configuration examples (including both `"servers"` and `"mcpServers"` formats), see the [mcp_configuration_examples.json](./mcp_configuration_examples.json) file in this repository.
+
+This file includes:
+- Additional real-world setups for Windows, Linux, and macOS
+- Minimal web development configurations
+- Multiple directory and file type examples
+- Migration tips for moving from config.json to command-line arguments
+- Legacy MCP client support using the `"mcpServers"` format
+
+Refer to it if you need more flexibility or are working with a non-standard MCP client.
+
 
 <a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
