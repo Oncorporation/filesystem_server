@@ -38,12 +38,12 @@ This MCP server is optimized for:
 **The easiest way to get started!** Create a `config.json` file:
 
 **For debugging (Visual Studio 2022):**
-- Place `config.json` in the same directory as `app.py` (`D:\Projects\filesystem_server\`)
+- Place `config.json` in the same directory as `app.py` (`/absolute/path/to/your/project/filesystem_server\`)
 
 **For MCP server usage:**
 - Place `config.json` in the same folder as your `.mcp.json` file (usually `C:\Users\YourUsername\`)
 
-```json
+```config.json
 {
   "allowed_dirs": [
     "C:/Users/YourUsername/Documents/projects",
@@ -55,6 +55,21 @@ This MCP server is optimized for:
     ".yml", ".yaml", ".toml", ".cfg", ".ini", ".cs",
     ".css", ".scss", ".htm", ".html", ".xml", ".xaml"
   ]
+}
+```
+
+- Add the basic MCP server configuration to your `.mcp.json` file (usually `C:\Users\YourUsername\` in VS 2022):
+```.mcp.json for VS2022
+{
+  "servers": {
+    "filesystem-server": {
+      "command": "python",
+      "args": [
+        "/absolute/path/to/your/project/filesystem_server/app.py"
+      ],
+      "cwd": "/absolute/path/to/your/project/filesystem_server"
+    }
+  }
 }
 ```
 
@@ -79,7 +94,7 @@ python app.py  # Uses config.json from same directory as app.py
 - 🌐 **MCP Server**: `config.json` goes next to `.mcp.json` 
 - 📁 **Different locations** for different use cases!
 
-### Option 2: Command-Line Arguments (Advanced - For MCP Clients)
+### Option 2: Command-Line Arguments (Advanced - For MCP Clients) 
 
 Best for production MCP client configurations where you want everything in one place:
 
@@ -87,18 +102,18 @@ Best for production MCP client configurations where you want everything in one p
 python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
 ```
 
-**MCP Client Configuration:**
-```json
+**MCP Client Configuration:** (`.mcp.json` file (usually `C:\Users\YourUsername\`) in VS 2022)
+```.mcp.json for VS2022
 {
   "servers": {
     "filesystem-server": {
       "command": "python",
       "args": [
-        "D:/Projects/filesystem_server/app.py",
+        "/absolute/path/to/your/project/filesystem_server/app.py",
         "--allowed-dirs", "D:/projects", "D:/Webs",
         "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt"
       ],
-      "cwd": "D:/Projects/filesystem_server"
+      "cwd": "/absolute/path/to/your/project/filesystem_server"
     }
   }
 }
@@ -142,16 +157,22 @@ python app.py --help-mcp
 
 **Available Tools:**
 
-1. `init()` - Validates accessibility of configured directories
-   - Returns `{"message": "OK", "isError": false}` if all directories accessible
+1. `init(directory, file_path)` - Validates accessibility of configured directories and can optionally list a directory and/or read a file
+   - `directory` (optional): Directory path to list contents (can be `None`)
+   - `file_path` (optional): File path to read content (can be `None`)
+   - Returns `{ "message": "OK", "isError": false, ... }` if all directories accessible
    - Returns error details if any directories are inaccessible
    - Shows configuration source (command-line args vs config file)
    - Use this to verify your configuration before using other tools
 
-2. `list_directory(directory)` - Lists files and subdirectories in a given directory
-   - Returns a list of file and directory names on success
-   - Returns `["error", "error_message"]` if an error occurs (access denied, directory not found, etc.)
-   - No exceptions are raised - all errors are returned as part of the result list
+2. `list_directory(directory, report_progress=False, batch_size=100)` - Lists files and subdirectories in a given directory, with optional progress reporting
+   - `directory`: The absolute or relative path to the directory (supports both / and \\ separators)
+   - `report_progress` (optional): If True, returns progress information and batch details (default: False)
+   - `batch_size` (optional): Number of items to process before reporting progress (default: 100)
+   - Returns a list of file and directory names if `report_progress` is False
+   - Returns a dictionary with contents, progress_info, total_items, and processing_time if `report_progress` is True
+   - If an error occurs, returns a dictionary with `"error"` and `"error_message"` keys
+   - No exceptions are raised - all errors are returned as part of the result
 
 3. `read_file(file_path)` - Reads the content of a specified file
 
@@ -273,3 +294,6 @@ list_directory("F:\\sd/wipes")     # Mixed format
 - 🐧 **Unix users** can use traditional `F:/sd/wipes`
 - 🔧 **No more path format errors** - everything just works
 - 🛡️ **Security checks work correctly** regardless of separator style
+
+
+<a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
