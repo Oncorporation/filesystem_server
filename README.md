@@ -7,6 +7,7 @@ Local MCP server for Visual Studio 2022 that provides code-workspace functionali
 - [🎯 Target Environment](#-target-environment)
 - [Features](#features)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
   - [Option 1: Config.json File (Simplest - Recommended for Beginners)](#option-1-configjson-file-simplest---recommended-for-beginners)
   - [Option 2: Command-Line Arguments (Advanced - For MCP Clients)](#option-2-command-line-arguments-advanced---for-mcp-clients)
@@ -15,7 +16,6 @@ Local MCP server for Visual Studio 2022 that provides code-workspace functionali
   - [Command Line Examples](#command-line-examples)
   - [Available Tools](#available-tools)
 - [Why This Hybrid Approach is Perfect](#why-this-hybrid-approach-is-perfect)
-- [Quick Start](#quick-start)
 - [Visual Studio 2022 Debugging](#visual-studio-2022-debugging)
 - [Visual Studio 2022 Usage Examples](#visual-studio-2022-usage-examples)
 - [Editing Your mcp.json File via GitHub Copilot Chat](#editing-your-mcpjson-file-via-github-copilot-chat)
@@ -60,6 +60,13 @@ This MCP server is optimized for:
    ```bash
    uv sync
    ```
+
+## Quick Start
+
+1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
+2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
+3. **Test your configuration** by calling the `init()` tool first
+4. **If init() returns errors**, check your directory paths and permissions
 
 ## Configuration Options
 
@@ -213,13 +220,6 @@ python app.py --help-mcp
 - ✅ **No conflicts**: Priority system handles both scenarios gracefully
 - ✅ **Developer-friendly**: Works however you want to run it
 - ✅ **Best of both worlds**: MCP efficiency + debugging convenience
-
-## Quick Start
-
-1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
-2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
-3. **Test your configuration** by calling the `init()` tool first
-4. **If init() returns errors**, check your directory paths and permissions
 
 ## Visual Studio 2022 Debugging
 
