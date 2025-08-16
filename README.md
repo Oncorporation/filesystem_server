@@ -2,6 +2,35 @@
 
 Local MCP server for Visual Studio 2022 that provides code-workspace functionality by giving AI agents selective access to project folders and files
 
+## Table of Contents
+
+- [🎯 Target Environment](#-target-environment)
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration Options](#configuration-options)
+  - [Option 1: Config.json File (Simplest - Recommended for Beginners)](#option-1-configjson-file-simplest---recommended-for-beginners)
+  - [Option 2: Command-Line Arguments (Advanced - For MCP Clients)](#option-2-command-line-arguments-advanced---for-mcp-clients)
+  - [Option 3: Hybrid Approach (Best of Both Worlds)](#option-3-hybrid-approach-best-of-both-worlds)
+- [Usage](#usage)
+  - [Command Line Examples](#command-line-examples)
+  - [Available Tools](#available-tools)
+- [Why This Hybrid Approach is Perfect](#why-this-hybrid-approach-is-perfect)
+- [Quick Start](#quick-start)
+- [Visual Studio 2022 Debugging](#visual-studio-2022-debugging)
+- [Visual Studio 2022 Usage Examples](#visual-studio-2022-usage-examples)
+- [Editing Your mcp.json File via GitHub Copilot Chat](#editing-your-mcpjson-file-via-github-copilot-chat)
+- [Security](#security)
+- [Error Handling](#error-handling)
+- [Troubleshooting](#troubleshooting)
+  - [MCP Configuration Issues](#mcp-configuration-issues)
+  - [Visual Studio 2022 Debugging](#visual-studio-2022-debugging-1)
+  - [Common Issues](#common-issues)
+- [Command Line Reference](#command-line-reference)
+- [Cross-Platform Path Support](#cross-platform-path-support)
+- [Advanced & Real-World MCP Configuration Examples](#advanced--real-world-mcp-configuration-examples)
+
+---
+
 ## 🎯 Target Environment
 
 This MCP server is optimized for:
@@ -27,6 +56,7 @@ This MCP server is optimized for:
 1. Ensure you have **Python 3.10+** installed
 2. Navigate to the project directory
 3. Install dependencies using uv:
+   
    ```bash
    uv sync
    ```
@@ -155,7 +185,7 @@ python app.py
 python app.py --help-mcp
 ```
 
-**Available Tools:**
+### Available Tools
 
 1. `init(directory, file_path)` - Validates accessibility of configured directories and can optionally list a directory and/or read a file
    - `directory` (optional): Directory path to list contents (can be `None`)
@@ -176,7 +206,6 @@ python app.py --help-mcp
 
 3. `read_file(file_path)` - Reads the content of a specified file
 
-
 ## Why This Hybrid Approach is Perfect
 
 - ✅ **MCP clients**: Use efficient command-line arguments
@@ -185,7 +214,7 @@ python app.py --help-mcp
 - ✅ **Developer-friendly**: Works however you want to run it
 - ✅ **Best of both worlds**: MCP efficiency + debugging convenience
 
-## Getting Started
+## Quick Start
 
 1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
 2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
@@ -211,6 +240,8 @@ python app.py --help-mcp
 
 Below are step-by-step examples showing how to call the FileSystem MCP Server from within Visual Studio 2022. These screenshots demonstrate the process using the alias **"fss"** for the server, which is simply a shorter name for `"filesystem-server"`. You can customize this alias in your `.mcp.json` file—**the actual name is up to you**.
 
+> **Note:** All images are located in the `images/` subfolder.
+
 ### Step 1: Calling the Server Tool
 
 ![Step 1: Example of calling the tool in Visual Studio 2022](images/step1-example.png)
@@ -225,9 +256,9 @@ The server responds with the results of your request, such as the output from th
 
 ---
 
-**Note:**  
-- The `"fss"` alias is used here for brevity. You can use any name you prefer in your `.mcp.json` configuration.
-- To change the server name, simply update the key in your `.mcp.json` file from `"filesystem-server"` to any other name you like.
+> **Note:**  
+> - The `"fss"` alias is used here for brevity. You can use any name you prefer in your `.mcp.json` configuration.
+> - To change the server name, simply update the key in your `.mcp.json` file from `"filesystem-server"` to any other name you like.
 
 For more details on configuring your MCP client, see the [Configuration Options](#configuration-options) section above.
 
@@ -343,6 +374,5 @@ This file includes:
 - Legacy MCP client support using the `"mcpServers"` format
 
 Refer to it if you need more flexibility or are working with a non-standard MCP client.
-
 
 <a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="images/buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
