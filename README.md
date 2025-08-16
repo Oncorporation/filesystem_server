@@ -213,13 +213,13 @@ Below are step-by-step examples showing how to call the FileSystem MCP Server fr
 
 ### Step 1: Calling the Server Tool
 
-![Step 1: Example of calling the tool in Visual Studio 2022](step1-example.png)
+![Step 1: Example of calling the tool in Visual Studio 2022](images/step1-example.png)
 
 In this example, the MCP client is configured to use `"fss"` as the server name. This is just an alias for convenience.
 
 ### Step 2: Viewing the Server Response
 
-![Step 2: Example of viewing the server response in Visual Studio 2022](step2-example.png)
+![Step 2: Example of viewing the server response in Visual Studio 2022](images/step2-example.png)
 
 The server responds with the results of your request, such as the output from the `read_file()` tool.
 
@@ -230,6 +230,18 @@ The server responds with the results of your request, such as the output from th
 - To change the server name, simply update the key in your `.mcp.json` file from `"filesystem-server"` to any other name you like.
 
 For more details on configuring your MCP client, see the [Configuration Options](#configuration-options) section above.
+
+## Editing Your mcp.json File via GitHub Copilot Chat
+
+You can easily edit your `mcp.json` configuration file directly from Visual Studio using the GitHub Copilot Chat interface. Follow these steps:
+
+1. **Click the Tools icon** on the right side of Visual Studio, while in Agent mode.
+2. **Click the arrow** next to any MCP server in the list.
+3. **Choose Edit** – the `mcp.json` file will open for editing.
+
+![How to edit mcp.json using GitHub Copilot Chat](images/edit-mcp.png)
+
+This allows you to quickly update your MCP server configuration without leaving the IDE.
 
 ## Security
 
@@ -333,4 +345,4 @@ This file includes:
 Refer to it if you need more flexibility or are working with a non-standard MCP client.
 
 
-<a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
+<a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="images/buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
