@@ -207,6 +207,30 @@ python app.py --help-mcp
 3. Press F5 or Debug > Start Debugging
 4. Server starts with your configured directories
 
+## Visual Studio 2022 Usage Examples
+
+Below are step-by-step examples showing how to call the FileSystem MCP Server from within Visual Studio 2022. These screenshots demonstrate the process using the alias **"fss"** for the server, which is simply a shorter name for `"filesystem-server"`. You can customize this alias in your `.mcp.json` file—**the actual name is up to you**.
+
+### Step 1: Calling the Server Tool
+
+![Step 1: Example of calling the tool in Visual Studio 2022](step1-example.png)
+
+In this example, the MCP client is configured to use `"fss"` as the server name. This is just an alias for convenience.
+
+### Step 2: Viewing the Server Response
+
+![Step 2: Example of viewing the server response in Visual Studio 2022](step2-example.png)
+
+The server responds with the results of your request, such as the output from the `read_file()` tool.
+
+---
+
+**Note:**  
+- The `"fss"` alias is used here for brevity. You can use any name you prefer in your `.mcp.json` configuration.
+- To change the server name, simply update the key in your `.mcp.json` file from `"filesystem-server"` to any other name you like.
+
+For more details on configuring your MCP client, see the [Configuration Options](#configuration-options) section above.
+
 ## Security
 
 - Only directories specified in `--allowed-dirs` or config.json can be accessed
