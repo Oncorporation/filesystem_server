@@ -211,7 +211,44 @@ python app.py --help-mcp
    - If an error occurs, returns a dictionary with `"error"` and `"error_message"` keys
    - No exceptions are raised - all errors are returned as part of the result
 
-3. `read_file(file_path)` - Reads the content of a specified file
+3. `read_file(file_path)` - Reads the content of a specified file as text
+   - Returns the file content as a string (for text files only)
+   - Not suitable for binary files (images, audio, etc.)
+
+4. `read_file_binary(file_path)` - Reads the content of a specified file as base64-encoded binary
+   - Returns `{ "content_base64": <base64 string>, "encoding": "base64", "error": False }` on success
+   - Returns an error dict if the file is not allowed or not found
+   - Suitable for images, audio, and other binary files
+
+5. `list_resources()` - Lists all resources (files and directories) in allowed directories in MCP resource format
+   - Returns a list of resource objects, each with:
+     - `id`: Unique identifier (absolute path)
+     - `type`: "file" or "directory"
+     - `name`: File or directory name
+     - `path`: Absolute path
+     - `metadata`: For files, includes `size` and `modified` timestamp
+     - `actions`: Supported actions (e.g., ["read", "read_binary"] for files, ["list"] for directories)
+   - Only includes files with allowed extensions and directories within allowed_dirs
+   - Example resource object:
+     ```json
+     {
+       "id": "D:/projects/example.txt",
+       "type": "file",
+       "name": "example.txt",
+       "path": "D:/projects/example.txt",
+       "metadata": {
+         "size": 1234,
+         "modified": "2025-08-18T12:34:56Z"
+       },
+       "actions": ["read", "read_binary"]
+     }
+     ```
+
+6. `get_resource(path)` - Gets metadata and actions for a specific file or directory
+   - `path`: Absolute or relative path to the resource
+   - Returns a resource object (id, type, name, path, metadata, actions) or an error dict
+   - For files, includes size and modified time; for directories, includes type and actions
+   - Does not return file content
 
 ## Why This Hybrid Approach is Perfect
 

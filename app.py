@@ -1,4 +1,4 @@
-﻿"""
+"""
 FileSystem MCP Server
 A secure filesystem access server for MCP clients.
 """
@@ -8,6 +8,8 @@ import sys
 import json
 import argparse
 import time
+import base64
+import datetime
 from typing import List, Dict, Any, Optional, Callable
 from mcp.server.fastmcp import FastMCP
 
@@ -574,6 +576,124 @@ def read_file(file_path: str) -> str:
         with open(normalized_file, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
 
+@mcp.tool()
+def list_resources() -> List[Dict[str, Any]]:
+    """
+    List all resources (files and directories) in allowed_dirs in MCP resource format.
+    Each resource includes: id, type, name, path, metadata, actions.
+    Returns:
+        List of resource objects as per MCP resource specification.
+    """
+    resources = []
+    for base_dir in allowed_dirs:
+        for root, dirs, files in os.walk(base_dir):
+            # Add directories
+            for d in dirs:
+                dir_path = os.path.join(root, d)
+                dir_path_norm = normalize_path(dir_path)
+                if is_allowed_path(dir_path_norm):
+                    resources.append({
+                        "id": dir_path_norm,
+                        "type": "directory",
+                        "name": d,
+                        "path": dir_path_norm,
+                        "metadata": {},
+                        "actions": ["list"]
+                    })
+            # Add files
+            for f in files:
+                file_path = os.path.join(root, f)
+                file_path_norm = normalize_path(file_path)
+                ext = os.path.splitext(f)[1].lower()
+                if is_allowed_path(file_path_norm) and ext in allowed_extensions:
+                    try:
+                        stat = os.stat(file_path_norm)
+                        modified = datetime.datetime.utcfromtimestamp(stat.st_mtime).isoformat() + "Z"
+                        size = stat.st_size
+                    except Exception:
+                        modified = None
+                        size = None
+                    resources.append({
+                        "id": file_path_norm,
+                        "type": "file",
+                        "name": f,
+                        "path": file_path_norm,
+                        "metadata": {
+                            "size": size,
+                            "modified": modified
+                        },
+                        "actions": ["read", "read_binary"]
+                    })
+    return resources
+
+@mcp.tool()
+def get_resource(path: str) -> Dict[str, Any]:
+    """
+    Get metadata and actions for a specific file or directory at the given path.
+    Returns a resource object or an error if not found or not allowed.
+    """
+    normalized_path = normalize_path(path)
+    if not is_allowed_path(normalized_path):
+        return {"error": True, "error_message": f"Access to this resource is not allowed: {path}"}
+    if not os.path.exists(normalized_path):
+        return {"error": True, "error_message": f"Resource does not exist: {path}"}
+    name = os.path.basename(normalized_path)
+    if os.path.isdir(normalized_path):
+        return {
+            "id": normalized_path,
+            "type": "directory",
+            "name": name,
+            "path": normalized_path,
+            "metadata": {},
+            "actions": ["list"]
+        }
+    elif os.path.isfile(normalized_path):
+        ext = os.path.splitext(name)[1].lower()
+        if ext not in allowed_extensions:
+            return {"error": True, "error_message": f"File type '{ext}' is not allowed."}
+        try:
+            stat = os.stat(normalized_path)
+            modified = datetime.datetime.utcfromtimestamp(stat.st_mtime).isoformat() + "Z"
+            size = stat.st_size
+        except Exception:
+            modified = None
+            size = None
+        return {
+            "id": normalized_path,
+            "type": "file",
+            "name": name,
+            "path": normalized_path,
+            "metadata": {
+                "size": size,
+                "modified": modified
+            },
+            "actions": ["read", "read_binary"]
+        }
+    else:
+        return {"error": True, "error_message": f"Resource is neither file nor directory: {path}"}
+
+@mcp.tool()
+def read_file_binary(file_path: str) -> Dict[str, Any]:
+    """
+    Read the content of a file as base64-encoded bytes.
+    Returns a dict with 'content_base64' (base64 string) or an error.
+    """
+    normalized_file = normalize_path(file_path)
+    if not is_allowed_path(normalized_file):
+        return {"error": True, "error_message": f"Access to this file is not allowed: {file_path}"}
+    if not os.path.isfile(normalized_file):
+        return {"error": True, "error_message": f"The provided path is not a file or does not exist: {file_path}"}
+    ext = os.path.splitext(normalized_file)[1].lower()
+    if ext not in allowed_extensions:
+        return {"error": True, "error_message": f"This file type '{ext}' is not allowed for reading."}
+    try:
+        with open(normalized_file, 'rb') as f:
+            data = f.read()
+        encoded = base64.b64encode(data).decode('ascii')
+        return {"content_base64": encoded, "encoding": "base64", "error": False}
+    except Exception as e:
+        return {"error": True, "error_message": f"Error reading file: {str(e)}"}
+
 def print_connection_info():
     """Print server connection information."""
     current_dir = os.getcwd()
@@ -612,7 +732,13 @@ def print_connection_info():
     print("\nUsage Instructions:")
     print("1. For MCP clients: Use command-line arguments (recommended)")
     print("2. For Visual Studio 2022 debugging: Uses config.json fallback")
-    print("3. Available tools: init(), list_directory(), read_file()")
+    print("3. Available tools:")
+    print("   - init(directory, file_path)")
+    print("   - list_directory(directory, report_progress=False, batch_size=100)")
+    print("   - read_file(file_path)")
+    print("   - read_file_binary(file_path)")
+    print("   - list_resources()")
+    print("   - get_resource(path)")
     print("4. Use --help-mcp for more configuration examples")
     print("5. Path formats: Both D:/path and D:\\path work automatically")
     print("="*60)
