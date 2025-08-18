@@ -390,7 +390,7 @@ def init(directory: str, file_path: str ) -> Dict[str, Any]:
     return response
 
 @mcp.tool()
-def list_directory(directory: str, report_progress: bool = False, batch_size: int = 100) -> Dict[str, Any]:
+def list_directory(directory: str, report_progress: bool = True, batch_size: int = 100) -> Dict[str, Any]:
     """
     List files and subdirectories in the given directory with optional progress reporting.
     
@@ -577,15 +577,39 @@ def read_file(file_path: str) -> str:
             return f.read()
 
 @mcp.tool()
-def list_resources() -> List[Dict[str, Any]]:
+def list_resources(directory: Optional[str] = None, report_progress: bool = True, batch_size: int = 100) -> Any:
     """
-    List all resources (files and directories) in allowed_dirs in MCP resource format.
-    Each resource includes: id, type, name, path, metadata, actions.
+    List all resources (files and directories) in the specified directory (or all allowed_dirs if not specified) in MCP resource format.
+    Supports progress reporting for large workspaces.
+    Args:
+        directory: Directory to start from (optional, defaults to all allowed_dirs)
+        report_progress: If True, returns progress info and batches
+        batch_size: Number of resources per progress batch
     Returns:
-        List of resource objects as per MCP resource specification.
+        If report_progress is False: List of all resource objects
+        If report_progress is True: Dict with contents, progress_info, total_items, processing_time
     """
+    import time
+    start_time = time.time()
     resources = []
-    for base_dir in allowed_dirs:
+    progress_updates = []
+    processed = 0
+    total_items = 0
+    dirs_to_walk = []
+    if directory:
+        dir_norm = normalize_path(directory)
+        if not is_allowed_path(dir_norm) or not os.path.isdir(dir_norm):
+            return {"error": True, "error_message": f"Directory not allowed or does not exist: {directory}"}
+        dirs_to_walk = [dir_norm]
+    else:
+        dirs_to_walk = [d for d in allowed_dirs if os.path.isdir(d)]
+    # Count total items for progress (optional, can be slow for huge trees)
+    if report_progress:
+        for base_dir in dirs_to_walk:
+            for _, dirs, files in os.walk(base_dir):
+                total_items += len(dirs) + len(files)
+    # Main walk
+    for base_dir in dirs_to_walk:
         for root, dirs, files in os.walk(base_dir):
             # Add directories
             for d in dirs:
@@ -600,6 +624,14 @@ def list_resources() -> List[Dict[str, Any]]:
                         "metadata": {},
                         "actions": ["list"]
                     })
+                    processed += 1
+                    if report_progress and processed % batch_size == 0:
+                        progress_updates.append({
+                            "processed": processed,
+                            "total": total_items,
+                            "percentage": round((processed/total_items)*100, 2) if total_items else None,
+                            "elapsed_time": round(time.time() - start_time, 3)
+                        })
             # Add files
             for f in files:
                 file_path = os.path.join(root, f)
@@ -624,7 +656,33 @@ def list_resources() -> List[Dict[str, Any]]:
                         },
                         "actions": ["read", "read_binary"]
                     })
-    return resources
+                    processed += 1
+                    if report_progress and processed % batch_size == 0:
+                        progress_updates.append({
+                            "processed": processed,
+                            "total": total_items,
+                            "percentage": round((processed/total_items)*100, 2) if total_items else None,
+                            "elapsed_time": round(time.time() - start_time, 3)
+                        })
+    end_time = time.time()
+    processing_time = round(end_time - start_time, 3)
+    if report_progress:
+        return {
+            "error": False,
+            "contents": resources,
+            "total_items": processed,
+            "processing_time": processing_time,
+            "progress_info": {
+                "status": "completed",
+                "stage": "finished",
+                "final_progress": progress_updates[-1] if progress_updates else None,
+                "progress_updates": progress_updates,
+                "directory_path": directory,
+                "normalized_path": normalize_path(directory) if directory else None
+            }
+        }
+    else:
+        return resources
 
 @mcp.tool()
 def get_resource(path: str) -> Dict[str, Any]:

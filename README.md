@@ -202,9 +202,9 @@ python app.py --help-mcp
    - Shows configuration source (command-line args vs config file)
    - Use this to verify your configuration before using other tools
 
-2. `list_directory(directory, report_progress=False, batch_size=100)` - Lists files and subdirectories in a given directory, with optional progress reporting
+2. `list_directory(directory, report_progress=True, batch_size=100)` - Lists files and subdirectories in a given directory, with optional progress reporting
    - `directory`: The absolute or relative path to the directory (supports both / and \\ separators)
-   - `report_progress` (optional): If True, returns progress information and batch details (default: False)
+   - `report_progress` (optional): If True, returns progress information and batch details (default: True)
    - `batch_size` (optional): Number of items to process before reporting progress (default: 100)
    - Returns a list of file and directory names if `report_progress` is False
    - Returns a dictionary with contents, progress_info, total_items, and processing_time if `report_progress` is True
@@ -220,15 +220,12 @@ python app.py --help-mcp
    - Returns an error dict if the file is not allowed or not found
    - Suitable for images, audio, and other binary files
 
-5. `list_resources()` - Lists all resources (files and directories) in allowed directories in MCP resource format
-   - Returns a list of resource objects, each with:
-     - `id`: Unique identifier (absolute path)
-     - `type`: "file" or "directory"
-     - `name`: File or directory name
-     - `path`: Absolute path
-     - `metadata`: For files, includes `size` and `modified` timestamp
-     - `actions`: Supported actions (e.g., ["read", "read_binary"] for files, ["list"] for directories)
-   - Only includes files with allowed extensions and directories within allowed_dirs
+5. `list_resources(directory=None, report_progress=True, batch_size=100)` - Lists all resources (files and directories) in a directory (or all allowed directories) in MCP resource format
+   - `directory` (optional): Directory to start from (defaults to all allowed_dirs)
+   - `report_progress` (optional): If True, returns progress information and batches (default: True)
+   - `batch_size` (optional): Number of resources per progress batch (default: 100)
+   - Returns a list of resource objects if `report_progress` is False
+   - Returns a dictionary with contents, progress_info, total_items, and processing_time if `report_progress` is True
    - Example resource object:
      ```json
      {
