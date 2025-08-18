@@ -2,6 +2,35 @@
 
 Local MCP server for Visual Studio 2022 that provides code-workspace functionality by giving AI agents selective access to project folders and files
 
+## Table of Contents
+
+- [🎯 Target Environment](#-target-environment)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration Options](#configuration-options)
+  - [Option 1: Config.json File (Simplest - Recommended for Beginners)](#option-1-configjson-file-simplest---recommended-for-beginners)
+  - [Option 2: Command-Line Arguments (Advanced - For MCP Clients)](#option-2-command-line-arguments-advanced---for-mcp-clients)
+  - [Option 3: Hybrid Approach (Best of Both Worlds)](#option-3-hybrid-approach-best-of-both-worlds)
+- [Usage](#usage)
+  - [Command Line Examples](#command-line-examples)
+  - [Available Tools](#available-tools)
+- [Why This Hybrid Approach is Perfect](#why-this-hybrid-approach-is-perfect)
+- [Visual Studio 2022 Debugging](#visual-studio-2022-debugging)
+- [Visual Studio 2022 Usage Examples](#visual-studio-2022-usage-examples)
+- [Editing Your mcp.json File via GitHub Copilot Chat](#editing-your-mcpjson-file-via-github-copilot-chat)
+- [Security](#security)
+- [Error Handling](#error-handling)
+- [Troubleshooting](#troubleshooting)
+  - [MCP Configuration Issues](#mcp-configuration-issues)
+  - [Visual Studio 2022 Debugging](#visual-studio-2022-debugging-1)
+  - [Common Issues](#common-issues)
+- [Command Line Reference](#command-line-reference)
+- [Cross-Platform Path Support](#cross-platform-path-support)
+- [Advanced & Real-World MCP Configuration Examples](#advanced--real-world-mcp-configuration-examples)
+
+---
+
 ## 🎯 Target Environment
 
 This MCP server is optimized for:
@@ -27,9 +56,17 @@ This MCP server is optimized for:
 1. Ensure you have **Python 3.10+** installed
 2. Navigate to the project directory
 3. Install dependencies using uv:
+   
    ```bash
    uv sync
    ```
+
+## Quick Start
+
+1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
+2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
+3. **Test your configuration** by calling the `init()` tool first
+4. **If init() returns errors**, check your directory paths and permissions
 
 ## Configuration Options
 
@@ -155,7 +192,7 @@ python app.py
 python app.py --help-mcp
 ```
 
-**Available Tools:**
+### Available Tools
 
 1. `init(directory, file_path)` - Validates accessibility of configured directories and can optionally list a directory and/or read a file
    - `directory` (optional): Directory path to list contents (can be `None`)
@@ -176,7 +213,6 @@ python app.py --help-mcp
 
 3. `read_file(file_path)` - Reads the content of a specified file
 
-
 ## Why This Hybrid Approach is Perfect
 
 - ✅ **MCP clients**: Use efficient command-line arguments
@@ -184,13 +220,6 @@ python app.py --help-mcp
 - ✅ **No conflicts**: Priority system handles both scenarios gracefully
 - ✅ **Developer-friendly**: Works however you want to run it
 - ✅ **Best of both worlds**: MCP efficiency + debugging convenience
-
-## Getting Started
-
-1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
-2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
-3. **Test your configuration** by calling the `init()` tool first
-4. **If init() returns errors**, check your directory paths and permissions
 
 ## Visual Studio 2022 Debugging
 
@@ -206,6 +235,44 @@ python app.py --help-mcp
 2. Ensure `config.json` exists (already created for you)
 3. Press F5 or Debug > Start Debugging
 4. Server starts with your configured directories
+
+## Visual Studio 2022 Usage Examples
+
+Below are step-by-step examples showing how to call the FileSystem MCP Server from within Visual Studio 2022. These screenshots demonstrate the process using the alias **"fss"** for the server, which is simply a shorter name for `"filesystem-server"`. You can customize this alias in your `.mcp.json` file—**the actual name is up to you**.
+
+> **Note:** All images are located in the `images/` subfolder.
+
+### Step 1: Calling the Server Tool
+
+![Step 1: Example of calling the tool in Visual Studio 2022](images/step1-example.png)
+
+In this example, the MCP client is configured to use `"fss"` as the server name. This is just an alias for convenience.
+
+### Step 2: Viewing the Server Response
+
+![Step 2: Example of viewing the server response in Visual Studio 2022](images/step2-example.png)
+
+The server responds with the results of your request, such as the output from the `read_file()` tool.
+
+---
+
+> **Note:**  
+> - The `"fss"` alias is used here for brevity. You can use any name you prefer in your `.mcp.json` configuration.
+> - To change the server name, simply update the key in your `.mcp.json` file from `"filesystem-server"` to any other name you like.
+
+For more details on configuring your MCP client, see the [Configuration Options](#configuration-options) section above.
+
+## Editing Your mcp.json File via GitHub Copilot Chat
+
+You can easily edit your `mcp.json` configuration file directly from Visual Studio using the GitHub Copilot Chat interface. Follow these steps:
+
+1. **Click the Tools icon** on the right side of Visual Studio, while in Agent mode.
+2. **Click the arrow** next to any MCP server in the list.
+3. **Choose Edit** – the `mcp.json` file will open for editing.
+
+![How to edit mcp.json using GitHub Copilot Chat](images/edit-mcp.png)
+
+This allows you to quickly update your MCP server configuration without leaving the IDE.
 
 ## Security
 
@@ -308,5 +375,4 @@ This file includes:
 
 Refer to it if you need more flexibility or are working with a non-standard MCP client.
 
-
-<a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
+<a href="https://www.buymeacoffee.com/Surn" target="_blank"><img src="images/buymeacoffee-oncorp-275.png" alt="Buy Me A Coffee" style="height: auto !important;width: 275px !important;" ></a>
