@@ -7,12 +7,12 @@
     "url": "https://github.com/Oncorporation/filesystem_server",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "vs-filesystem-mcp-server",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },

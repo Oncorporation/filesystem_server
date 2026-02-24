@@ -14,18 +14,7 @@ The vs-filesystem-mcp-server is configured to be automatically published to both
 
 ### Required Secrets
 
-You need to configure one GitHub repository secret:
-
-1. **PYPI_API_TOKEN**: Your PyPI API token
-   - Go to [PyPI Account Settings](https://pypi.org/manage/account/)
-   - Create an API token with upload permissions
-   - Add it as a repository secret named `PYPI_API_TOKEN`
-
-To add secrets:
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add the token
+PyPI publishing uses **Trusted Publisher (OIDC)**, so no PyPI token secret is required.
 
 ## Publishing Process
 
@@ -41,7 +30,7 @@ The GitHub Actions workflow (`.github/workflows/publish-mcp.yml`) automatically 
 
 2. **Commit your changes:**
    ```bash
-   git add pyproject.toml
+   git add pyproject.toml server.json
    git commit -m "Bump version to 0.1.1"
    git push
    ```
@@ -57,7 +46,7 @@ The GitHub Actions workflow (`.github/workflows/publish-mcp.yml`) automatically 
    - Watch the "Publish to MCP Registry" workflow run
    - It will:
      - Build the Python package
-     - Publish to PyPI
+     - Publish to PyPI using **Trusted Publisher (OIDC)**
      - Authenticate with MCP Registry using GitHub OIDC
      - Update version in server.json
      - Publish to MCP Registry
@@ -122,6 +111,7 @@ Contains package metadata including repository URLs.
 | "Invalid or expired Registry JWT token" | Re-authenticate with `mcp-publisher login github` |
 | "Package not found on PyPI" | Ensure the package is published to PyPI first |
 | "Version mismatch" | Ensure versions match in pyproject.toml and server.json |
+| "Trusted publishing disabled" | Remove PyPI token from the workflow so OIDC is used |
 | "This project name is too similar to an existing project" | The name is already taken on PyPI - choose a unique name like `vs-filesystem-mcp-server` or `oncorp-filesystem-server` |
 
 ## Finding Your Server

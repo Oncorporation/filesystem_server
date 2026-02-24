@@ -47,3 +47,5 @@ venv/
 # Deprecated files
 main.py
 /.vs
+/.mcpregistry_github_token
+/.mcpregistry_registry_token
