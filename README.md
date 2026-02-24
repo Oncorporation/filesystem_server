@@ -85,13 +85,13 @@ pip install vs-filesystem-mcp-server
 
 **The easiest way to get started!** Create a `config.json` file:
 
-**For debugging (Visual Studio 2022+):**
-- Place `config.json` in the same directory as `app.py` (`/absolute/path/to/your/project/filesystem_server\`)
-
 **For MCP server usage:**
 - Place `config.json` in the same folder as your `.mcp.json` file (usually `C:\Users\YourUsername\`)
 
-```config.json
+**For debugging from source (Visual Studio 2022+):**
+- Place `config.json` in the same directory as `app.py` (`D:/Projects/filesystem_server/`)
+
+```json
 {
   "allowed_dirs": [
     "C:/Users/YourUsername/Documents/projects",
@@ -106,8 +106,27 @@ pip install vs-filesystem-mcp-server
 }
 ```
 
-- Add the basic MCP server configuration to your `.mcp.json` file (usually `C:\Users\YourUsername\` in VS 2022+):
-```.mcp.json for VS2022+
+#### MCP Configuration (Installed via pip)
+
+Add this to your `.mcp.json` file (usually `C:\Users\YourUsername\` in VS 2022+):
+
+```json
+{
+  "servers": {
+    "filesystem-server": {
+      "command": "vs-filesystem-mcp-server"
+    }
+  }
+}
+```
+
+**Note:** When installed via pip, the command is just `vs-filesystem-mcp-server` - no path to `app.py` needed!
+
+#### MCP Configuration (Running from Source)
+
+If you're developing and running from source code:
+
+```json
 {
   "servers": {
     "filesystem-server": {
@@ -146,12 +165,30 @@ python app.py  # Uses config.json from same directory as app.py
 
 Best for production MCP client configurations where you want everything in one place:
 
+#### When Installed via pip
+
+```json
+{
+  "servers": {
+    "filesystem-server": {
+      "command": "vs-filesystem-mcp-server",
+      "args": [
+        "--allowed-dirs", "D:/projects", "D:/Webs",
+        "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt"
+      ]
+    }
+  }
+}
+```
+
+#### When Running from Source
+
 ```bash
 python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
 ```
 
-**MCP Client Configuration:** (`.mcp.json` file (usually `C:\Users\YourUsername\`) in VS 2022)
-```.mcp.json for VS2022
+**MCP Client Configuration (.mcp.json):**
+```json
 {
   "servers": {
     "filesystem-server": {
