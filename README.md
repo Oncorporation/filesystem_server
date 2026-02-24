@@ -1,6 +1,6 @@
 ﻿# FileSystem MCP Server
 
-<!-- mcp-name: io.github.oncorporation/filesystem-server -->
+<!-- mcp-name: io.github.Oncorporation/filesystem-server -->
 
 Local MCP server for Visual Studio 2022+ that provides code-workspace functionality by giving AI agents selective access to project folders and files
 

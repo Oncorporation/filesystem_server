@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.oncorporation/filesystem-server",
+  "name": "io.github.Oncorporation/filesystem-server",
   "title": "FileSystem MCP Server",
   "description": "Secure filesystem access for AI agents with configurable directory and file type restrictions",
   "repository": {
