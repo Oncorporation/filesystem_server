@@ -1,0 +1,53 @@
+name: Publish to MCP Registry
+
+on:
+  push:
+    tags: ["v*"] # Triggers on version tags like v0.1.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC authentication
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      ### Publish underlying PyPI package:
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      ### Publish MCP server:
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Set version in server.json
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          python -c "import json; data = json.load(open('server.json')); data['version'] = '$VERSION'; data['packages'][0]['version'] = '$VERSION'; json.dump(data, open('server.json', 'w'), indent=2)"
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish

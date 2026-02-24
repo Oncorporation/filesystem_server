@@ -1,0 +1,36 @@
+# Include essential Python files
+include app.py
+include setup.py
+include pyproject.toml
+
+# Include essential files for the package
+include README.md
+include LICENSE
+include config.json
+include mcp_configuration_examples.json
+
+# Include documentation images
+recursive-include images *.png *.jpg *.jpeg *.gif *.svg
+
+# Exclude development and publishing files
+exclude PUBLISHING.md
+exclude server.json
+exclude MANIFEST.in
+
+# Exclude CI/CD and development directories
+recursive-exclude .github *
+prune .github
+
+# Exclude version control
+global-exclude .git*
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *$py.class
+global-exclude *.so
+
+# Exclude IDE and editor files
+global-exclude .vscode
+global-exclude .vs
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~

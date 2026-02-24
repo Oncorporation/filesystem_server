@@ -1,6 +1,8 @@
 ﻿# FileSystem MCP Server
 
-Local MCP server for Visual Studio 2022 that provides code-workspace functionality by giving AI agents selective access to project folders and files
+<!-- mcp-name: io.github.oncorporation/filesystem-server -->
+
+Local MCP server for Visual Studio 2022+ that provides code-workspace functionality by giving AI agents selective access to project folders and files
 
 ## Table of Contents
 
@@ -16,14 +18,14 @@ Local MCP server for Visual Studio 2022 that provides code-workspace functionali
   - [Command Line Examples](#command-line-examples)
   - [Available Tools](#available-tools)
 - [Why This Hybrid Approach is Perfect](#why-this-hybrid-approach-is-perfect)
-- [Visual Studio 2022 Debugging](#visual-studio-2022-debugging)
-- [Visual Studio 2022 Usage Examples](#visual-studio-2022-usage-examples)
+- [Visual Studio 2022+ Debugging](#visual-studio-2022-debugging)
+- [Visual Studio 2022+ Usage Examples](#visual-studio-2022-usage-examples)
 - [Editing Your mcp.json File via GitHub Copilot Chat](#editing-your-mcpjson-file-via-github-copilot-chat)
 - [Security](#security)
 - [Error Handling](#error-handling)
 - [Troubleshooting](#troubleshooting)
   - [MCP Configuration Issues](#mcp-configuration-issues)
-  - [Visual Studio 2022 Debugging](#visual-studio-2022-debugging-1)
+  - [Visual Studio 2022+ Debugging](#visual-studio-2022-debugging-1)
   - [Common Issues](#common-issues)
 - [Command Line Reference](#command-line-reference)
 - [Cross-Platform Path Support](#cross-platform-path-support)
@@ -34,7 +36,7 @@ Local MCP server for Visual Studio 2022 that provides code-workspace functionali
 ## 🎯 Target Environment
 
 This MCP server is optimized for:
-- **Visual Studio 2022** development workflows
+- **Visual Studio 2022+** development workflows
 - **Local development environments** without complex workspace setups
 - **Direct folder access** scenarios where you need filesystem operations
 - **Development environments that don't use `.code-workspace` files**
@@ -46,10 +48,10 @@ This MCP server is optimized for:
 - **File Reading**: Read contents of files with allowed extensions  
 - **Directory Validation**: Check accessibility of configured directories
 - **Hybrid Configuration**: Command-line arguments (MCP) + config.json fallback (debugging)
-- **Visual Studio 2022 Debugging**: No-argument startup support
+- **Visual Studio 2022+ Debugging**: No-argument startup support
 - **Cross-Platform Path Support**: Automatically handles both Windows (`\`) and Unix (`/`) path separators
 - **Security**: Access restricted to explicitly specified directories and file types
-- **Local Development Focus**: Perfect for Visual Studio 2022 and similar environments
+- **Local Development Focus**: Perfect for Visual Studio 2022+ and similar environments
 
 ## Installation
 
@@ -64,7 +66,7 @@ This MCP server is optimized for:
 ## Quick Start
 
 1. **For MCP usage**: Add the corrected configuration to your `.mcp.json`
-2. **For debugging**: Just press F5 in Visual Studio 2022 - uses config.json automatically
+2. **For debugging**: Just press F5 in Visual Studio 2022+ - uses config.json automatically
 3. **Test your configuration** by calling the `init()` tool first
 4. **If init() returns errors**, check your directory paths and permissions
 
@@ -74,7 +76,7 @@ This MCP server is optimized for:
 
 **The easiest way to get started!** Create a `config.json` file:
 
-**For debugging (Visual Studio 2022):**
+**For debugging (Visual Studio 2022+):**
 - Place `config.json` in the same directory as `app.py` (`/absolute/path/to/your/project/filesystem_server\`)
 
 **For MCP server usage:**
@@ -95,8 +97,8 @@ This MCP server is optimized for:
 }
 ```
 
-- Add the basic MCP server configuration to your `.mcp.json` file (usually `C:\Users\YourUsername\` in VS 2022):
-```.mcp.json for VS2022
+- Add the basic MCP server configuration to your `.mcp.json` file (usually `C:\Users\YourUsername\` in VS 2022+):
+```.mcp.json for VS2022+
 {
   "servers": {
     "filesystem-server": {
@@ -185,7 +187,7 @@ The server automatically uses **command-line arguments first**, then **falls bac
 # With command line arguments (MCP clients):
 python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
 
-# Using config.json fallback (Visual Studio 2022 debugging):
+# Using config.json fallback (Visual Studio 2022+ debugging):
 python app.py
 
 # Show MCP configuration help:
@@ -255,7 +257,7 @@ python app.py --help-mcp
 - ✅ **Developer-friendly**: Works however you want to run it
 - ✅ **Best of both worlds**: MCP efficiency + debugging convenience
 
-## Visual Studio 2022 Debugging
+## Visual Studio 2022+ Debugging
 
 **Perfect debugging experience:**
 - ✅ No command-line arguments needed
@@ -270,7 +272,7 @@ python app.py --help-mcp
 3. Press F5 or Debug > Start Debugging
 4. Server starts with your configured directories
 
-## Visual Studio 2022 Usage Examples
+## Visual Studio 2022+ Usage Examples
 
 Below are step-by-step examples showing how to call the FileSystem MCP Server from within Visual Studio 2022. These screenshots demonstrate the process using the alias **"fss"** for the server, which is simply a shorter name for `"filesystem-server"`. You can customize this alias in your `.mcp.json` file—**the actual name is up to you**.
 
@@ -337,7 +339,7 @@ The server provides detailed error messages for:
 
 Your original config had a **missing comma** after `"D:/Webs"`. The corrected version above fixes this.
 
-### Visual Studio 2022 Debugging
+### Visual Studio 2022+ Debugging
 
 1. **Ensure config.json exists** (already created for your directories)
 2. **Start with the `init()` tool** to validate your configuration
