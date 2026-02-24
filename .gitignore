@@ -15,9 +15,15 @@ build/
 dist/
 *.egg-info/
 *.egg
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 
 # IDE files
 .vscode/
+.vs/
 .idea/
 *.swp
 *.swo
@@ -28,6 +34,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# UV/pip cache
+.uv/
+.venv/
+venv/
 
 # Environment files
 .env

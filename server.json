@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.oncorporation/filesystem-server",
+  "title": "FileSystem MCP Server",
+  "description": "Secure filesystem access for AI agents with configurable directory and file type restrictions",
+  "repository": {
+    "url": "https://github.com/Oncorporation/filesystem_server",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "vs-filesystem-mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": []
+    }
+  ]
+}
