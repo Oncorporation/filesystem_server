@@ -90,7 +90,15 @@ Note: Paths can use either forward slashes (/) or backslashes (\\) - they will b
         action='store_true',
         help='Show MCP client configuration examples'
     )
-    
+
+    parser.add_argument(
+        '--allow-write', '--allow_write',
+        type=lambda x: x.lower() in ('true', '1', 'yes'),
+        help='Enable write_file and write_file_binary tools: true or false (default: false)',
+        default=False,
+        metavar='BOOL'
+    )
+
     return parser.parse_args()
 
 def load_configuration():
@@ -105,7 +113,11 @@ def load_configuration():
     allowed_dirs = []
     allowed_extensions = []
     config_source = "none"
-    
+    allow_write = args.allow_write
+
+    if allow_write:
+        print("[OK] Write access enabled via command line argument")
+
     # Try command line arguments first
     # Fix: Check if args are provided AND have content, not just not None
     if args.allowed_dirs is not None and len(args.allowed_dirs) > 0:
@@ -122,7 +134,7 @@ def load_configuration():
         print(f"[OK] Using allowed_extensions from command line: {args.allowed_extensions}")
     
     # Fallback to config.json if command-line args not provided OR empty
-    if not allowed_dirs or not allowed_extensions:
+    if not allowed_dirs or not allowed_extensions or not allow_write:
         try:
             with open(args.config, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -143,7 +155,14 @@ def load_configuration():
                     if config_source == "none":
                         config_source = "config_file"
                     print(f"[FILE] Using allowed_extensions from {args.config}: {config.get('allowed_extensions', [])}")
-                    
+
+            if not allow_write:
+                allow_write = bool(config.get('allow_write', False))
+                if allow_write:
+                    if config_source == "none":
+                        config_source = "config_file"
+                    print(f"[FILE] Write access enabled from {args.config}")
+
         except FileNotFoundError:
             if not allowed_dirs and not allowed_extensions:
                 print(f"[WARN] {args.config} not found and no command line arguments provided.")
@@ -164,8 +183,11 @@ def load_configuration():
         print("[WARN] No allowed extensions configured")
         print("   For debugging: Create config.json or use --allowed-extensions")
         print("   For MCP: Add --allowed-extensions to your MCP client configuration")
-    
-    return allowed_dirs, allowed_extensions, config_source
+
+    if not allow_write:
+        print("[INFO] Write access disabled (default). Use --allow-write or set 'allow_write': true in config.json to enable.")
+
+    return allowed_dirs, allowed_extensions, config_source, allow_write
 
 def show_mcp_help():
     """Show MCP client configuration examples."""
@@ -215,7 +237,7 @@ def show_mcp_help():
     print("="*70)
 
 # Load configuration
-allowed_dirs, allowed_extensions, config_source = load_configuration()
+allowed_dirs, allowed_extensions, config_source, allow_write = load_configuration()
 
 def is_allowed_path(path: str) -> bool:
     """
@@ -348,6 +370,7 @@ def init(directory: str, file_path: str ) -> Dict[str, Any]:
                 "total_allowed": len(allowed_dirs),
                 "total_accessible": len(accessible_dirs),
                 "configuration_source": config_source,
+                "allow_write": allow_write,
                 "path_normalization": "Enabled - accepts both / and \\ path separators"
             }
         }
@@ -645,6 +668,9 @@ def list_resources(directory: Optional[str] = None, report_progress: bool = True
                     except Exception:
                         modified = None
                         size = None
+                    file_actions = ["read", "read_binary"]
+                    if allow_write:
+                        file_actions.extend(["write", "write_binary"])
                     resources.append({
                         "id": file_path_norm,
                         "type": "file",
@@ -654,7 +680,7 @@ def list_resources(directory: Optional[str] = None, report_progress: bool = True
                             "size": size,
                             "modified": modified
                         },
-                        "actions": ["read", "read_binary"]
+                        "actions": file_actions
                     })
                     processed += 1
                     if report_progress and processed % batch_size == 0:
@@ -716,6 +742,9 @@ def get_resource(path: str) -> Dict[str, Any]:
         except Exception:
             modified = None
             size = None
+        file_actions = ["read", "read_binary"]
+        if allow_write:
+            file_actions.extend(["write", "write_binary"])
         return {
             "id": normalized_path,
             "type": "file",
@@ -725,7 +754,7 @@ def get_resource(path: str) -> Dict[str, Any]:
                 "size": size,
                 "modified": modified
             },
-            "actions": ["read", "read_binary"]
+            "actions": file_actions
         }
     else:
         return {"error": True, "error_message": f"Resource is neither file nor directory: {path}"}
@@ -752,6 +781,86 @@ def read_file_binary(file_path: str) -> Dict[str, Any]:
     except Exception as e:
         return {"error": True, "error_message": f"Error reading file: {str(e)}"}
 
+@mcp.tool()
+def write_file(file_path: str, content: str) -> None:
+    """
+    Write text content to a file.
+
+    Args:
+        file_path: The absolute or relative path to the file (supports both / and \\ separators).
+        content: The text content to write.
+
+    Raises:
+        ValueError: If the file is not allowed, parent directory issues, disallowed extension, or write fails.
+    """
+    if not allow_write:
+        raise ValueError("Write operations are disabled. Use --allow-write argument or set 'allow_write': true in config.json to enable writing.")
+
+    normalized_file = normalize_path(file_path)
+    
+    if not is_allowed_path(normalized_file):
+        raise ValueError(f"Access to this file is not allowed. Requested: {file_path}, Normalized: {normalized_file}")
+    
+    parent_dir = os.path.dirname(normalized_file)
+    if not os.path.exists(parent_dir):
+        raise ValueError(f"Parent directory does not exist: {parent_dir}")
+    
+    if not os.access(parent_dir, os.W_OK):
+        raise ValueError(f"No write permission to parent directory: {parent_dir}")
+    
+    ext = os.path.splitext(normalized_file)[1].lower()
+    if ext not in allowed_extensions:
+        raise ValueError(f"This file type '{ext}' is not allowed for writing. Allowed extensions: {allowed_extensions}")
+    
+    try:
+        with open(normalized_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        raise ValueError(f"Error writing file: {str(e)}")
+
+@mcp.tool()
+def write_file_binary(file_path: str, content_base64: str) -> Dict[str, Any]:
+    """
+    Write binary content to a file from base64-encoded string.
+    Returns a dict with success status or error.
+
+    Args:
+        file_path: The absolute or relative path to the file (supports both / and \\ separators).
+        content_base64: Base64-encoded binary content.
+
+    Returns:
+        {"success": true, "bytes_written": int, "encoding": "base64", "error": false} on success
+        {"error": true, "error_message": str} on failure
+    """
+    if not allow_write:
+        return {"error": True, "error_message": "Write operations are disabled. Use --allow-write argument or set 'allow_write': true in config.json to enable writing."}
+
+    normalized_file = normalize_path(file_path)
+    
+    if not is_allowed_path(normalized_file):
+        return {"error": True, "error_message": f"Access to this file is not allowed: {file_path}"}
+    
+    parent_dir = os.path.dirname(normalized_file)
+    if not os.path.exists(parent_dir):
+        return {"error": True, "error_message": f"Parent directory does not exist: {parent_dir}"}
+    
+    if not os.access(parent_dir, os.W_OK):
+        return {"error": True, "error_message": f"No write permission to parent directory: {parent_dir}"}
+    
+    ext = os.path.splitext(normalized_file)[1].lower()
+    if ext not in allowed_extensions:
+        return {"error": True, "error_message": f"This file type '{ext}' is not allowed for writing."}
+    
+    try:
+        data = base64.b64decode(content_base64)
+        with open(normalized_file, 'wb') as f:
+            f.write(data)
+        return {"success": True, "bytes_written": len(data), "encoding": "base64", "error": False}
+    except base64.binascii.Error:
+        return {"error": True, "error_message": "Invalid base64 content provided"}
+    except Exception as e:
+        return {"error": True, "error_message": f"Error writing file: {str(e)}"}
+
 def print_connection_info():
     """Print server connection information."""
     current_dir = os.getcwd()
@@ -766,6 +875,7 @@ def print_connection_info():
     print(f"Configuration Source: {config_source}")
     print(f"Transport: stdio (Standard Input/Output)")
     print(f"Path Normalization: [ENABLED] (supports both / and \\ separators)")
+    print(f"Write Access: {'[ENABLED]' if allow_write else '[DISABLED] (use --allow-write to enable)'}")
     
     if config_source == "config_file":
         print("\n[DEBUG] DEBUGGING MODE (using config.json)")
@@ -795,6 +905,8 @@ def print_connection_info():
     print("   - list_directory(directory, report_progress=False, batch_size=100)")
     print("   - read_file(file_path)")
     print("   - read_file_binary(file_path)")
+    print(f"   - write_file(file_path, content) {'[ENABLED]' if allow_write else '[DISABLED - requires --allow-write]'}")
+    print(f"   - write_file_binary(file_path, content_base64) {'[ENABLED]' if allow_write else '[DISABLED - requires --allow-write]'}")
     print("   - list_resources()")
     print("   - get_resource(path)")
     print("4. Use --help-mcp for more configuration examples")
@@ -806,6 +918,7 @@ def main():
     print(f"Starting MCP server with allowed dirs: {allowed_dirs}")
     print(f"Allowed extensions: {allowed_extensions}")
     print(f"Configuration source: {config_source}")
+    print(f"Write access: {'enabled' if allow_write else 'disabled (use --allow-write to enable)'}")
     
     # Allow server to start even without configuration for debugging purposes
     if not allowed_dirs or not allowed_extensions:
