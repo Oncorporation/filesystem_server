@@ -1,8 +1,8 @@
 name: Publish to MCP Registry
-
 on:
+  workflow_dispatch:
   push:
-    tags: ["v*"] # Triggers on version tags like v0.1.0
+    tags: ["v*"] # Triggers on version tags like v0.1.x
 
 jobs:
   publish:

@@ -7,7 +7,7 @@ from setuptools import setup
 
 setup(
     name="filesystem-server",
-    version="0.1.0",
+    version="0.1.3",
     description="MCP server for filesystem access with command-line configuration",
     py_modules=["app"],
     python_requires=">=3.10",

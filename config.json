@@ -21,5 +21,6 @@
     ".scss",
     ".htm",
     ".html"
-  ]
+  ],
+  "allow_write": false
 }

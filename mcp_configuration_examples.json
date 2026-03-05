@@ -65,6 +65,24 @@
             }
           },
           "note": "Requires config.json file in the same directory as app.py"
+        },
+        "write_enabled": {
+          "description": "With file writing enabled (disabled by default for security)",
+          "config": {
+            "servers": {
+              "filesystem-server": {
+                "command": "python",
+                "args": [
+                  "/path/to/your/filesystem_server/app.py",
+                  "--allowed-dirs", "/your/project/dir",
+                  "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt",
+                  "--allow-write", "true"
+                ],
+                "cwd": "/path/to/your/filesystem_server"
+              }
+            }
+          },
+          "note": "Enables write_file and write_file_binary tools. Alternatively set 'allow_write': true in config.json"
         }
       }
     },
@@ -113,8 +131,27 @@
             "command": "python",
             "args": [
               "D:/Projects/filesystem_server/app.py",
-              "--allowed-dirs", "D:/projects", "D:/webs", "C:/source/repos",
-              "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+              "--allowed-dirs",
+              "D:/projects",
+              "D:/webs",
+              "C:/source/repos",
+              "--allowed-extensions",
+              ".py",
+              ".js",
+              ".ts",
+              ".json",
+              ".md",
+              ".txt",
+              ".yml",
+              ".yaml",
+              ".toml",
+              ".cfg",
+              ".ini",
+              ".css",
+              ".scss",
+              ".htm",
+              ".html",
+              "--allow-write", "false"
             ],
             "cwd": "D:/Projects/filesystem_server"
           }
@@ -130,7 +167,8 @@
             "args": [
               "/home/user/projects/filesystem_server/app.py",
               "--allowed-dirs", "/home/user/projects", "/home/user/development",
-              "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html"
+              "--allowed-extensions", ".py", ".js", ".ts", ".json", ".md", ".txt", ".yml", ".yaml", ".toml", ".cfg", ".ini", ".css", ".scss", ".htm", ".html", 
+              "--allow-write", "false"
             ],
             "cwd": "/home/user/projects/filesystem_server"
           }
@@ -190,5 +228,16 @@
     "step3": "Update your MCP client configuration using the correct format",
     "step4": "Test with init() tool to verify it works",
     "step5": "Optionally remove config.json (it still works as fallback)"
+  },
+  "write_access_control": {
+    "description": "Write tools (write_file, write_file_binary) are disabled by default for security",
+    "enable_via_cli": "Add --allow-write argument to your MCP client configuration args",
+    "enable_via_config": "Set \"allow_write\": true in your config.json file",
+    "config_json_example": {
+      "allowed_dirs": ["D:/projects"],
+      "allowed_extensions": [".py", ".js", ".md"],
+      "allow_write": true
+    },
+    "security_note": "Only enable write access for trusted MCP clients and well-scoped allowed_dirs"
   }
 }

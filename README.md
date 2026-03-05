@@ -46,6 +46,7 @@ This MCP server is optimized for:
 
 - **Directory Traversal**: List contents of allowed directories
 - **File Reading**: Read contents of files with allowed extensions  
+- **File Writing**: Write text/binary content to files — **opt-in via `--allow-write`** (disabled by default)
 - **Directory Validation**: Check accessibility of configured directories
 - **Hybrid Configuration**: Command-line arguments (MCP) + config.json fallback (debugging)
 - **Visual Studio 2022+ Debugging**: No-argument startup support
@@ -102,9 +103,12 @@ pip install vs-filesystem-mcp-server
     ".py", ".js", ".ts", ".json", ".md", ".txt",
     ".yml", ".yaml", ".toml", ".cfg", ".ini", ".cs",
     ".css", ".scss", ".htm", ".html", ".xml", ".xaml"
-  ]
+  ],
+  "allow_write": false
 }
 ```
+
+> **Note:** Set `"allow_write": true` to enable `write_file` and `write_file_binary` tools.
 
 #### MCP Configuration (Installed via pip)
 
@@ -185,6 +189,9 @@ Best for production MCP client configurations where you want everything in one p
 
 ```bash
 python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md"
+
+# With write access enabled:
+python app.py --allowed-dirs "D:/projects" "D:/Webs" --allowed-extensions ".py" ".js" ".md" --allow-write true
 ```
 
 **MCP Client Configuration (.mcp.json):**
@@ -285,7 +292,7 @@ python app.py --help-mcp
          "size": 1234,
          "modified": "2025-08-18T12:34:56Z"
        },
-       "actions": ["read", "read_binary"]
+       "actions": ["read", "read_binary", "write", "write_binary"]
      }
      ```
 
@@ -294,6 +301,20 @@ python app.py --help-mcp
    - Returns a resource object (id, type, name, path, metadata, actions) or an error dict
    - For files, includes size and modified time; for directories, includes type and actions
    - Does not return file content
+
+7. `write_file(file_path, content)` - Writes text content to a specified file (**requires `--allow-write`**)
+   - `file_path`: Path to write to (must be within allowed dirs)
+   - `content`: Text string to write
+   - Raises `ValueError` if write access is disabled, path not allowed, extension not allowed, or IO error
+   - Overwrites existing file
+   - **Disabled by default** — enable with `--allow-write` flag or `"allow_write": true` in config.json
+
+8. `write_file_binary(file_path, content_base64)` - Writes binary content from base64 to file (**requires `--allow-write`**)
+   - `file_path`: Path to write to (must be within allowed dirs)
+   - `content_base64`: Base64-encoded binary data
+   - Returns `{"success": true, "bytes_written": int, "error": false}` or error dict
+   - Overwrites existing file, suitable for images/binaries
+   - **Disabled by default** — enable with `--allow-write` flag or `"allow_write": true` in config.json
 
 ## Why This Hybrid Approach is Perfect
 
@@ -359,7 +380,8 @@ This allows you to quickly update your MCP server configuration without leaving 
 ## Security
 
 - Only directories specified in `--allowed-dirs` or config.json can be accessed
-- Only files with extensions in `--allowed-extensions` or config.json can be read
+- Only files with extensions in `--allowed-extensions` or config.json can be read or written
+- **Write access disabled by default**: `write_file` and `write_file_binary` require `--allow-write` flag or `"allow_write": true` in config.json
 - All paths are validated before access
 - The server runs with the permissions of the user account
 - **Perfect for local development**: Secure access to your project directories
@@ -406,6 +428,8 @@ python app.py --help                         # Show help
 python app.py --help-mcp                     # Show MCP configuration examples  
 python app.py --allowed-dirs DIR1 DIR2       # Set allowed directories
 python app.py --allowed-extensions EXT1 EXT2 # Set allowed extensions
+python app.py --allow-write true             # Enable write tools (disabled by default)
+python app.py --allow-write false            # Explicitly disable write tools
 python app.py --config custom.json           # Use custom config file
 python app.py                                # Use config.json fallback (debugging)
 ```
