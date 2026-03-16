@@ -912,7 +912,28 @@ def print_connection_info():
     print("4. Use --help-mcp for more configuration examples")
     print("5. Path formats: Both D:/path and D:\\path work automatically")
     print("="*60)
-
+@mcp.tool()
+def get_file_metadata(file_path: str) -> Dict[str, Any]:
+    """Get metadata about a file without reading content."""
+    try:
+        normalized_file = normalize_path(file_path)
+        if not is_allowed_path(normalized_file):
+            return {"error": True, "error_message": f"Access denied: {file_path}"}
+        if not os.path.isfile(normalized_file):
+            return {"error": True, "error_message": f"File not found: {file_path}"}
+        stat = os.stat(normalized_file)
+        return {
+            "success": True,
+            "data": {
+                "name": os.path.basename(normalized_file),
+                "path": normalized_file,
+                "size_bytes": stat.st_size,
+                "size_mb": round(stat.st_size / (1024*1024), 2),
+                "modified": datetime.datetime.utcfromtimestamp(stat.st_mtime).isoformat(),
+            }
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 def main():
     """Main entry point for the server."""
     print(f"Starting MCP server with allowed dirs: {allowed_dirs}")
