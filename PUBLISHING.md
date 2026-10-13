@@ -47,6 +47,8 @@ The GitHub Actions workflow (`.github/workflows/publish-mcp.yml`) automatically 
    - It will:
      - Build the Python package
      - Publish to PyPI using **Trusted Publisher (OIDC)**
+     - Use the tag version, or the `pyproject.toml` version for manual `workflow_dispatch` runs
+     - Wait for that PyPI version to become visible
      - Authenticate with MCP Registry using GitHub OIDC
      - Update version in server.json
      - Publish to MCP Registry

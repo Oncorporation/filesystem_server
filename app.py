@@ -11,10 +11,20 @@ import time
 import base64
 import datetime
 from typing import List, Dict, Any, Optional, Callable
-from mcp.server.fastmcp import FastMCP
+# Support both MCP v1 (FastMCP) and MCP v2 (MCPServer).
+# MCP v2 renamed FastMCP -> MCPServer and moved the symbol; prefer v2 when available.
+try:
+    from mcp.server.fastmcp import FastMCP
+    MCP_IMPL = FastMCP
+except Exception:
+    # Fall back to MCP v2 import path and alias to preserve existing code that
+    # expects FastMCP. This keeps the rest of the code unchanged and allows
+    # the package to run against either MCP v1 or MCP v2 installations.
+    from mcp.server.mcpserver import MCPServer as FastMCP  # type: ignore
+    MCP_IMPL = FastMCP
 
-# Initialize the MCP server
-mcp = FastMCP(name="FileSystemServer")
+# Initialize the MCP server (uses whichever implementation was found)
+mcp = MCP_IMPL(name="FileSystemServer")
 
 def normalize_path(path: str) -> str:
     """

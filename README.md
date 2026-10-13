@@ -2,6 +2,8 @@
 
 <!-- mcp-name: io.github.Oncorporation/filesystem-server -->
 
+Version: 0.1.4 — Last updated: 2026-10-13
+
 Local MCP server for Visual Studio 2022+ that provides code-workspace functionality by giving AI agents selective access to project folders and files
 
 ## Table of Contents

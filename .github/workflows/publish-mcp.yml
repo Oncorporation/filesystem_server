@@ -13,12 +13,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       ### Publish underlying PyPI package:
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10'
 
@@ -32,6 +32,47 @@ jobs:
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+      - name: Determine release version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(python -c "import pathlib, re; text = pathlib.Path('pyproject.toml').read_text(encoding='utf-8'); m = re.search(r'^version\s*=\s*[\"\']([^\"\']+)[\"\']', text, re.MULTILINE); print(m.group(1) if m else (_ for _ in ()).throw(RuntimeError('version not found in pyproject.toml'))) ")
+          fi
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Wait for PyPI version availability
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          package = "vs-filesystem-mcp-server"
+          version = os.environ["RELEASE_VERSION"]
+          url = f"https://pypi.org/pypi/{package}/{version}/json"
+
+          for attempt in range(1, 13):
+              try:
+                  with urllib.request.urlopen(url) as response:
+                      if response.status == 200:
+                          print(f"PyPI version {version} is available.")
+                          sys.exit(0)
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 404:
+                      raise
+
+              if attempt < 12:
+                  print(f"PyPI version {version} not visible yet; retrying ({attempt}/12)...")
+                  time.sleep(10)
+
+          raise SystemExit(f"PyPI version {version} was not visible after waiting 120 seconds.")
+          PY
 
       ### Publish MCP server:
 
@@ -44,7 +85,7 @@ jobs:
 
       - name: Set version in server.json
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION="$RELEASE_VERSION"
           python -c "import json; data = json.load(open('server.json')); data['version'] = '$VERSION'; data['packages'][0]['version'] = '$VERSION'; json.dump(data, open('server.json', 'w'), indent=2)"
 
       - name: Publish server to MCP Registry
